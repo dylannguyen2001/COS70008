@@ -6,18 +6,15 @@ import pandas as pd
 import nltk
 from nltk.tokenize import sent_tokenize
 
-# Use your OneDrive maildir folder path
+# Using OneDrive maildir folder path
 MAILDIR = r"C:\Users\petermak11\OneDrive - Swinburne University\Documents\Master of IT\2025 Semester 2\COS70008 - Technology Innovation Research and Project\enron_mail_20150507.tar\enron_mail_20150507\maildir"
 
-# Path to Emails_clean.parquet  (⚠️ double-check the exact filename in Explorer!)
+# Path to Emails_clean.parquet
 INPUT_CLEAN = os.path.join(MAILDIR, "Emails_clean.parquet")
 
 # Output folder (inside maildir\outputs)
 OUT_DIR = os.path.join(MAILDIR, "outputs")
 Path(OUT_DIR).mkdir(parents=True, exist_ok=True)
-
-# Sanity check
-assert os.path.exists(INPUT_CLEAN), f"Not found: {INPUT_CLEAN}\nCheck filename and path."
 
 # Download NLTK tokenizer
 nltk.download("punkt", quiet=True)

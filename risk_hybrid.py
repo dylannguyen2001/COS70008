@@ -2,15 +2,15 @@
 """
 Keyword/Rules Risk Scoring (emails + threads)
 - Inputs (in same folder as this file):
-    TextBase.parquet               (emails, Week 1)
-    ThreadText.parquet            (optional, Hai)
-    RiskTaxonomy.json             (your taxonomy & keywords)
-    LabeledSeed.parquet           (optional, your 50 labels)
+    TextBase.parquet              (emails, Week 1)
+    ThreadText.parquet            (Hai)
+    RiskTaxonomy.json             (taxonomy & keywords)
+    LabeledSeed.parquet           (our 50 labels)
 - Outputs (created under ./risk_outputs):
     RiskScores.parquet
     TopRisk.csv
-    RiskScores_threads.parquet    (if threads exist)
-    TopRisk_threads.csv           (if threads exist)
+    RiskScores_threads.parquet
+    TopRisk_threads.csv
 """
 
 import os, re, json
@@ -22,26 +22,37 @@ BASE_DIR = Path(__file__).resolve().parent
 IN_TEXTBASE = BASE_DIR / "TextBase.parquet"
 IN_THREADTEXT = BASE_DIR / "ThreadText.parquet"
 IN_TAXON = BASE_DIR / "RiskTaxonomy.json"
-IN_SEED = BASE_DIR / "LabeledSeed.parquet"   # optional
+IN_SEED = BASE_DIR / "LabeledSeed.parquet"
 
 OUT_DIR = BASE_DIR / "risk_outputs"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-# ----------------- helpers -----------------
+# ----------------- taxonomy loader -----------------
 def load_taxonomy(tax_path: Path):
+    """Load nested taxonomy and flatten all keywords into compiled regex patterns."""
     with open(tax_path, "r", encoding="utf-8") as f:
         tax = json.load(f)
-    cats = tax.get("categories", [])
-    keywords = tax.get("keywords", {})
-    # compile case-insensitive regex list per category
-    compiled = {
-        cat: [re.compile(pat, re.IGNORECASE) for pat in keywords.get(cat, [])]
-        for cat in cats
-    }
-    return cats, compiled
 
+    compiled = {}
+    # Supports both flat and nested JSON structures
+    if isinstance(tax.get("categories", [])[0], dict):
+        # Nested version
+        for cat in tax["categories"]:
+            cat_name = cat["name"]
+            subpatterns = []
+            for sub in cat.get("subcategories", []):
+                subpatterns.extend(sub.get("keywords", []))
+            compiled[cat_name] = [re.compile(p, re.IGNORECASE) for p in subpatterns]
+    else:
+        # Flat version (backward compatibility)
+        for cat in tax.get("categories", []):
+            patterns = tax.get("keywords", {}).get(cat, [])
+            compiled[cat] = [re.compile(p, re.IGNORECASE) for p in patterns]
+
+    return list(compiled.keys()), compiled
+
+# ----------------- text preparation -----------------
 def prepare_email_text(df: pd.DataFrame) -> pd.DataFrame:
-    # Expect subject_norm, body_clean; fallbacks if needed
     subj = df["subject_norm"] if "subject_norm" in df.columns else df.get("subject", "")
     body = df["body_clean"] if "body_clean" in df.columns else df.get("body_raw", "")
     df = df.copy()
@@ -49,13 +60,13 @@ def prepare_email_text(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 def prepare_thread_text(df: pd.DataFrame) -> pd.DataFrame:
-    # Expect subject_norm, body_concat
     subj = df["subject_norm"] if "subject_norm" in df.columns else ""
     body = df["body_concat"] if "body_concat" in df.columns else ""
     df = df.copy()
     df["__text__"] = (subj.fillna("") + " " + body.fillna("")).str.strip()
     return df
 
+# ----------------- keyword scanning -----------------
 def keyword_score(text: str, compiled_patterns: dict):
     counts = {}
     hits_terms = {}
@@ -71,8 +82,8 @@ def keyword_score(text: str, compiled_patterns: dict):
         hits_terms[cat] = terms
     return counts, hits_terms
 
+# ----------------- label and score decision -----------------
 def decide_label(counts: dict, seed_label: str | None = None):
-    # If a seed label exists, trust it; otherwise argmax of keyword counts
     if seed_label:
         label = seed_label
         by_cat = counts.get(seed_label, 0)
@@ -80,10 +91,10 @@ def decide_label(counts: dict, seed_label: str | None = None):
         label = max(counts, key=lambda k: counts[k]) if counts else None
         by_cat = counts.get(label, 0) if label else 0
     total = sum(counts.values())
-    # final_score = 0..1 simple normalization (avoid div by zero)
     final_score = (by_cat / total) if total > 0 else 0.0
     return label, total, final_score
 
+# ----------------- main scoring block -----------------
 def run_block(label: str,
               in_path: Path,
               id_col: str,
@@ -102,13 +113,8 @@ def run_block(label: str,
         seed_lbl = seed_map.get(rid) if seed_map else None
         risk_label, hits_total, final_score = decide_label(counts, seed_lbl)
 
-        # pack matched terms only for winning category to keep row compact
-        matched_terms_json = {}
-        for k, v in terms.items():
-            if v:
-                matched_terms_json[k] = v
+        matched_terms_json = {k: v for k, v in terms.items() if v}
 
-        # Track per-category counts too (flat columns)
         out = {
             id_col: rid,
             "risk_label": risk_label,
@@ -122,7 +128,6 @@ def run_block(label: str,
 
     out_df = pd.DataFrame(rows)
 
-    # top risk pick per item (already 1-row per item here; also write CSV quick view)
     csv_name = "TopRisk.csv" if id_col == "email_id" else "TopRisk_threads.csv"
     pq_name  = "RiskScores.parquet" if id_col == "email_id" else "RiskScores_threads.parquet"
     out_df.sort_values(["final_score", id_col], ascending=[False, True]).to_csv(OUT_DIR / csv_name, index=False)
@@ -134,22 +139,18 @@ def run_block(label: str,
 
 # ----------------- main -----------------
 def main():
-    # Check inputs
     assert IN_TEXTBASE.exists(), f"Missing {IN_TEXTBASE}"
     assert IN_TAXON.exists(), f"Missing {IN_TAXON}"
 
     categories, compiled_patterns = load_taxonomy(IN_TAXON)
 
-    # Optional seed labels to “lock in” some true categories
     seed_map = {}
     if IN_SEED.exists():
         seed_df = pd.read_parquet(IN_SEED)
-        # Expect columns: email_id, risk_label
         if "email_id" in seed_df.columns and "risk_label" in seed_df.columns:
             seed_map = dict(zip(seed_df["email_id"], seed_df["risk_label"].astype(str)))
             print(f"Loaded seed labels: {len(seed_map)} items")
 
-    # Emails pass
     run_block(
         label="emails",
         in_path=IN_TEXTBASE,
@@ -159,7 +160,6 @@ def main():
         seed_map=seed_map
     )
 
-    # Threads pass
     if IN_THREADTEXT.exists():
         run_block(
             label="threads",
@@ -167,12 +167,32 @@ def main():
             id_col="thread_id",
             prep_fn=prepare_thread_text,
             compiled_patterns=compiled_patterns,
-            seed_map=None  # seeds are per email_id; skip for threads
+            seed_map=None
         )
     else:
         print("\n(No ThreadText.parquet found — skipping threads block.)")
 
     print("\nDone.")
+
+    # --- Coverage evaluation ---
+    try:
+        rs_path = OUT_DIR / "RiskScores.parquet"
+        if rs_path.exists():
+            df = pd.read_parquet(rs_path)
+            coverage = (df["hits_total"] > 0).mean() * 100
+            avg_score = df["final_score"].mean()
+            print(f"\n[Coverage] {coverage:.2f}% of emails flagged by at least one keyword.")
+            print(f"[Average final_score] {avg_score:.4f}")
+
+            # Per-category coverage (optional detail)
+            per_cat = {c: (df[f"hits_{c}"] > 0).mean() * 100 for c in compiled_patterns.keys()}
+            print("\n[Per-category coverage]")
+            for k, v in per_cat.items():
+                print(f"  {k:15s}: {v:6.2f}%")
+        else:
+            print("\n[Coverage] RiskScores.parquet not found — skipping coverage check.")
+    except Exception as e:
+        print(f"\n[Coverage] Error during coverage evaluation: {e}")
 
 if __name__ == "__main__":
     main()

@@ -21,10 +21,10 @@ SENTIMENT_MODEL = "cardiffnlp/twitter-roberta-base-sentiment-latest"     # pos/n
 EMOTION_MODEL   = "j-hartmann/emotion-english-distilroberta-base"        # anger, joy, sadness, fear, disgust, surprise, neutral
 
 # Batch and length
-BATCH_SIZE = 2048             # drop to 1024 or 512 if you hit CUDA OOM
+BATCH_SIZE = 2048             
 MAXLEN_EMAIL  = 128
 MAXLEN_THREAD = 256
-LIMIT = None                  # set to 1000 for a smoke test
+LIMIT = None                  
 
 # Upload if missing
 need_upload = not (os.path.exists("TextBase.parquet") and os.path.exists("ThreadText.parquet"))
@@ -115,7 +115,7 @@ def score_emails():
         for pid, st, ss, et, es, L, txt in zip(ids, s_labels, s_scores, e_labels, e_scores, lens, texts):
             rows.append({
                 "email_id": pid,
-                "email_text": txt,                         # real email text for your presentation
+                "email_text": txt,                         
                 "sentiment_label": st,
                 "sentiment_score": float(ss),
                 "emotion_label": et,
@@ -168,7 +168,7 @@ def score_threads():
         for pid, st, ss, et, es, L, txt in zip(ids, s_labels, s_scores, e_labels, e_scores, lens, texts):
             rows.append({
                 "thread_id": pid,
-                "thread_text": txt,                        # concatenated text for transparency
+                "thread_text": txt,                        
                 "sentiment_label": st,
                 "sentiment_score": float(ss),
                 "emotion_label": et,

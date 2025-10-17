@@ -1,4 +1,4 @@
-# ==== Part D: NLP-ready corpus prep on CLEAN file (OneDrive \ maildir) ====
+# ==== Preparing the NLP Corpus from the CLEAN file (OneDrive \ maildir) ====
 
 import os, re
 from pathlib import Path
@@ -6,24 +6,25 @@ import pandas as pd
 import nltk
 from nltk.tokenize import sent_tokenize
 
-# Use your OneDrive maildir folder path
+# My OneDrive path to the extracted Enron maildir folder
 MAILDIR = r"C:\Users\petermak11\OneDrive - Swinburne University\Documents\Master of IT\2025 Semester 2\COS70008 - Technology Innovation Research and Project\enron_mail_20150507.tar\enron_mail_20150507\maildir"
 
-# Path to Emails_clean.parquet  (⚠️ double-check the exact filename in Explorer!)
+# Path to the cleaned parquet file (I double-checked this filename manually)
 INPUT_CLEAN = os.path.join(MAILDIR, "Emails_clean.parquet")
 
-# Output folder (inside maildir\outputs)
+# Output folder for the processed files (stored under maildir\outputs)
 OUT_DIR = os.path.join(MAILDIR, "outputs")
 Path(OUT_DIR).mkdir(parents=True, exist_ok=True)
 
-# Sanity check
+# Quick path check just to make sure the cleaned file exists
 assert os.path.exists(INPUT_CLEAN), f"Not found: {INPUT_CLEAN}\nCheck filename and path."
 
-# Download NLTK tokenizer
+# Download the NLTK tokenizer (used for splitting sentences)
 nltk.download("punkt", quiet=True)
 
-# ------------ helpers ------------
+# ------------ Helper functions ------------
 def normalize_subject(subj: str) -> str:
+    """Standardises subject lines by removing reply/forward tags, brackets, and extra spaces."""
     if pd.isna(subj): return ""
     s = subj.lower().strip()
     s = re.sub(r'^\s*(re|fwd)\s*:\s*', '', s)
@@ -32,6 +33,7 @@ def normalize_subject(subj: str) -> str:
     return s.strip()
 
 def clean_body(text: str) -> str:
+    """Cleans email body text — removes quoted replies, signatures, disclaimers, and extra whitespace."""
     if pd.isna(text): return ""
     t = text.replace("\r\n", "\n").replace("\r", "\n")
     t = "\n".join([ln for ln in t.splitlines() if not ln.strip().startswith(">")])
@@ -42,18 +44,21 @@ def clean_body(text: str) -> str:
     t = re.sub(r"[ \t]+", " ", t)
     return t.strip()
 
-# ------------ load cleaned data ------------
+# ------------ Load the cleaned dataset ------------
 df = pd.read_parquet(INPUT_CLEAN)
 print("Loaded cleaned dataset:", df.shape)
 
-# ------------ Part D transforms ------------
+# ------------ NLP prep transforms ------------
+# Here I’m creating standardised subject and cleaned body fields, 
+# plus some useful metadata for length and text presence.
 df["subject_norm"]    = df["subject"].apply(normalize_subject)
 df["body_clean"]      = df["body_raw"].apply(clean_body)
 df["text_len_chars"]  = df["body_clean"].str.len()
 df["text_len_tokens"] = df["body_clean"].str.split().str.len()
 df["has_text"]        = (df["text_len_tokens"].fillna(0) >= 3)
 
-# Sentence-level table
+# ------------ Sentence-level table ------------
+# This breaks each email body into individual sentences and assigns IDs to each one.
 sent_rows = []
 for _, row in df[df["has_text"]].iterrows():
     for i, s in enumerate(sent_tokenize(row["body_clean"])):
@@ -67,12 +72,14 @@ for _, row in df[df["has_text"]].iterrows():
             })
 sent_df = pd.DataFrame(sent_rows)
 
-# Email-level text table
+# ------------ Email-level text table ------------
+# Keeps only the main text columns I need for NLP models.
 textbase = df[[
     "email_id", "subject_norm", "body_clean", "text_len_chars", "text_len_tokens", "has_text"
 ]].copy()
 
-# Metadata / join index
+# ------------ Metadata / document index ------------
+# Here I’m keeping metadata fields to help with joins and filtering later on.
 doc_cols = [c for c in [
     "email_id", "person_id", "from_norm", "dt_utc",
     "domain_sender", "internal_sender", "mass_mail",
@@ -82,14 +89,16 @@ docindex = df[doc_cols].copy()
 docindex["reply_flag"]   = df["subject"].str.lower().str.startswith("re:")
 docindex["forward_flag"] = df["subject"].str.lower().str.startswith("fwd:")
 
-# ------------ save ------------
+# ------------ Save outputs ------------
+# I’m exporting three parquet files for later analysis or NLP input.
 textbase.to_parquet(os.path.join(OUT_DIR, "TextBase.parquet"), index=False)
 sent_df.to_parquet(os.path.join(OUT_DIR, "Sentence.parquet"), index=False)
 docindex.to_parquet(os.path.join(OUT_DIR, "DocIndex.parquet"), index=False)
 
 print("Saved output files to:", OUT_DIR)
 
-# ------------ quick QA ------------
+# ------------ Quick quality check ------------
+# Just summarising how many emails and sentences were processed successfully.
 n_total = len(df)
 n_text  = int(df["has_text"].sum())
 n_sent  = len(sent_df)

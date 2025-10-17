@@ -1,1 +1,6 @@
 dashboard/*.json
+dashboard/node_modules
+data
+new_data
+unused_data
+unused_scripts

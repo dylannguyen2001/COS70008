@@ -59,7 +59,7 @@ print("Categories:", categories)
 print("\nLoading zero-shot classification model (facebook/bart-large-mnli)...")
 classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
 device = classifier.device
-print(f"🚀 Model loaded on {device} — starting inference...\n")
+print(f"Model loaded on {device} — starting inference...\n")
 
 # -------------------- Run classification --------------------
 rows, start = [], time.time()
@@ -79,7 +79,7 @@ for i, (_, row) in enumerate(tqdm(df.iterrows(), total=total, desc="Processing t
         score = round(float(res["scores"][0]), 4)
     except Exception as e:
         label, score = None, 0.0
-        print(f"⚠️ Error on {thread_id}: {e}")
+        print(f"Error on {thread_id}: {e}")
 
     rows.append({
         "thread_id": thread_id,
@@ -93,11 +93,11 @@ for i, (_, row) in enumerate(tqdm(df.iterrows(), total=total, desc="Processing t
         pd.DataFrame(rows).to_csv(OUT_CSV, index=False)
         percent = ((i + 1) / total) * 100
         if int(percent) % 10 == 0:
-            print(f"✅ {int(percent)}% done ({i+1}/{total})")
+            print(f"{int(percent)}% done ({i+1}/{total})")
 
 # -------------------- Final save --------------------
 pd.DataFrame(rows).to_parquet(OUT_PARQ, index=False)
 pd.DataFrame(rows).to_csv(OUT_CSV, index=False)
 
-print(f"\n✅ Done. Processed {len(rows)} threads in {round(time.time() - start, 2)} seconds.")
+print(f"\nProcessed {len(rows)} threads in {round(time.time() - start, 2)} seconds.")
 print(f"Outputs saved to:\n  {OUT_PARQ}\n  {OUT_CSV}")

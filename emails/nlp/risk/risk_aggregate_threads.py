@@ -43,6 +43,5 @@ merged["risk_label_aggregate"] = merged["risk_label_zeroshot"].fillna(merged["ri
 merged.to_parquet(OUTP, index=False)
 merged.to_csv(OUTC, index=False)
 
-print(f"\n✅ Done — aggregate thread results saved to:")
 print(f"  {OUTP}")
 print(f"  {OUTC}")

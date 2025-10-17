@@ -6,14 +6,13 @@ import pandas as pd
 import nltk
 from nltk.tokenize import sent_tokenize
 
-# My OneDrive path to the extracted Enron maildir folder
-MAILDIR = r"C:\Users\petermak11\OneDrive - Swinburne University\Documents\Master of IT\2025 Semester 2\COS70008 - Technology Innovation Research and Project\enron_mail_20150507.tar\enron_mail_20150507\maildir"
+# Use your OneDrive maildir folder path
+# MAILDIR = r"C:\Users\petermak11\OneDrive - Swinburne University\Documents\Master of IT\2025 Semester 2\COS70008 - Technology Innovation Research and Project\enron_mail_20150507.tar\enron_mail_20150507\maildir"
 
-# Path to the cleaned parquet file (I double-checked this filename manually)
-INPUT_CLEAN = os.path.join(MAILDIR, "Emails_clean.parquet")
+# Path to Emails_clean.parquet  (⚠️ double-check the exact filename in Explorer!)
+INPUT_CLEAN = Path("data/Emails_clean_9902.parquet")
+OUT_DIR = Path("data/nlp_inputs")
 
-# Output folder for the processed files (stored under maildir\outputs)
-OUT_DIR = os.path.join(MAILDIR, "outputs")
 Path(OUT_DIR).mkdir(parents=True, exist_ok=True)
 
 # Quick path check just to make sure the cleaned file exists
@@ -89,11 +88,10 @@ docindex = df[doc_cols].copy()
 docindex["reply_flag"]   = df["subject"].str.lower().str.startswith("re:")
 docindex["forward_flag"] = df["subject"].str.lower().str.startswith("fwd:")
 
-# ------------ Save outputs ------------
-# I’m exporting three parquet files for later analysis or NLP input.
-textbase.to_parquet(os.path.join(OUT_DIR, "TextBase.parquet"), index=False)
-sent_df.to_parquet(os.path.join(OUT_DIR, "Sentence.parquet"), index=False)
-docindex.to_parquet(os.path.join(OUT_DIR, "DocIndex.parquet"), index=False)
+# ------------ save ------------
+textbase.to_parquet(os.path.join(OUT_DIR, "TextBase_9902.parquet"), index=False)
+sent_df.to_parquet(os.path.join(OUT_DIR, "Sentence_9902.parquet"), index=False)
+docindex.to_parquet(os.path.join(OUT_DIR, "DocIndex_9902.parquet"), index=False)
 
 print("Saved output files to:", OUT_DIR)
 

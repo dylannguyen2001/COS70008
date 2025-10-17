@@ -81,7 +81,7 @@ def main():
     assert THREAD_PATH.exists(), f"Missing {THREAD_PATH}"
     assert TAX_PATH.exists(), f"Missing {TAX_PATH}"
 
-    print("📥 Loading thread data and taxonomy...")
+    print("Loading thread data and taxonomy...")
     df = pd.read_parquet(THREAD_PATH)
     df = prepare_thread_text(df)
 
@@ -115,7 +115,7 @@ def main():
     out_df.to_parquet(pq_path, index=False)
     out_df.to_csv(csv_path, index=False)
 
-    print(f"\n✅ Saved thread scores:")
+    print(f"\nSaved thread scores:")
     print(f"  {pq_path}")
     print(f"  {csv_path}")
     print(f"Total threads processed: {len(out_df)}")

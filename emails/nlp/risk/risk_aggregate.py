@@ -14,14 +14,14 @@ ZERO   = BASE / "risk_outputs" / "RiskScores_zeroshot.parquet"
 OUTP   = BASE / "risk_outputs" / "RiskScores_aggregate.parquet"
 OUTC   = BASE / "risk_outputs" / "RiskScores_aggregate.csv"
 
-print("📥 Loading hybrid and zero-shot results…")
+print("Loading hybrid and zero-shot results…")
 hy = pd.read_parquet(HYBRID)
 ze = pd.read_parquet(ZERO)
 print(f"Hybrid shape: {hy.shape}, Zero-shot shape: {ze.shape}")
 
 # --- keep only emails flagged by the hybrid model ---
 hy_flag = hy.loc[hy["hits_total"] > 0, ["email_id", "risk_label", "final_score"]].copy()
-print(f"✅ Flagged emails: {len(hy_flag)}")
+print(f"Flagged emails: {len(hy_flag)}")
 
 # --- merge both datasets on email_id ---
 merged = hy_flag.merge(
@@ -30,7 +30,7 @@ merged = hy_flag.merge(
     how="left",
     suffixes=("_hybrid", "_zeroshot")
 )
-print(f"🔗 Merged shape: {merged.shape}")
+print(f"Merged shape: {merged.shape}")
 
 # --- take the average of hybrid + zero-shot final_score ---
 merged["risk_score_aggregate"] = merged[["final_score_hybrid", "final_score_zeroshot"]].mean(axis=1)
@@ -42,6 +42,6 @@ merged["risk_label_aggregate"] = merged["risk_label_zeroshot"].fillna(merged["ri
 merged.to_parquet(OUTP, index=False)
 merged.to_csv(OUTC, index=False)
 
-print(f"\n✅ Done — aggregate results saved to:")
+print(f"\nDone — aggregate results saved to:")
 print(f"  {OUTP}")
 print(f"  {OUTC}")

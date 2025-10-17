@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Node Detail</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script type = "module" src="d3/threads.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+
+  <style>
+    .thread-filters {
+    margin-bottom: 10px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    }
+
+    .thread-filters input[type="text"] {
+    flex: 1;
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    }
+
+    .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    }
+
+    .data-table th, .data-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #ddd;
+    text-align: left;
+    font-size: 14px;
+    }
+
+    .data-table tr:hover {
+    background-color: #f9f9f9;
+    }
+
+    .tab-content {
+    display: none;
+    }
+
+    .tab-content.active {
+    display: block;
+    }
+
+    .thread-table-wrapper {
+        flex-grow: 1;
+        overflow-y: auto;             /* enables scrolling */
+        border: 1px solid #ccc;
+        background: #fff;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .data-table th {
+        position: sticky;
+        top: 0;
+        background: #f1f1f1;
+        z-index: 10;
+    }
+
+    .data-table th, .data-table td {
+        padding: 8px 12px;
+        border-bottom: 1px solid #ddd;
+        font-size: 14px;
+        }
+
+    .data-table tr:hover {
+        background-color: #f9f9f9;
+    }
+
+
+    .navBar-subItem {
+        margin-left: 32px;
+    }
+
+    .navBar-subItem:hover {
+      cursor: pointer;
+      opacity: 0.75;
+    }
+  </style>
+</head>
+<body>
+  <div class = "root d-flex flex-column">
+  <div class = "nav-bar bg-primary p-4 d-flex align-items-center justify-content-between" style="height: 6rem">
+    <a href="index.html" class="fs-2 fw-bold text-uppercase text-decoration-none text-light">
+      Analysia
+    </a>    
+    <div class = "d-flex justify-content-between">
+      <a href="node_detail.html" class = "navBar-subItem fw-bold text-uppercase text-decoration-none text-light">Actor details</a>
+      <a class = "navBar-subItem fw-bold text-uppercase text-decoration-none text-light">Threads</a>
+    </div>
+  </div>
+  <div class = "main-container position-relative d-flex flex-column flex-grow-1">
+    <div id="threads" class="tab-content active">
+    <div class="thread-table-wrapper">
+    <table id="threadTable" class="data-table">
+        <thead>
+        <tr>
+            <th>Thread ID</th>
+            <th>Risk Label</th>
+            <th>Mean Risk</th>
+            <th>Mean Sentiment</th>
+            <th># Emails</th>
+        </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+    </div>
+    </div>
+  </div>
+</div>
+
+
+</body>
+</html>

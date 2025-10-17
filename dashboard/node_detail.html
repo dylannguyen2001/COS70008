@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Node Detail</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script defer src="d3/node_detail.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background: #0b0b0b;
+      color: #eee;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .main-container {
+      width: 100vw;
+      overflow: hidden; 
+    }
+
+    #node-info {
+      width: 35%;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 24px;
+      overflow-y: auto; 
+      overflow-x: hidden;
+      box-shadow: 2px 0 8px rgba(0, 0, 0, 0.4);
+      height: 100%;
+      max-height: 85vh; 
+    }
+
+
+    #node-info p {
+      margin-bottom: 8px;
+    }
+
+    #node-info h2 {
+      margin-top: 0;
+    }
+
+    .label {
+      color: #ccc;
+      display: inline-block;
+      width: 160px;
+    }
+
+    #email-list {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.02);
+      padding: 16px 24px;
+      overflow-y: auto;
+    }
+
+    .email-card {
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 10px;
+      padding: 14px 18px;
+      margin-bottom: 14px;
+      line-height: 1.4em;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+
+    .email-card h4 {
+      margin: 0 0 4px;
+      color: #00bfff;
+      font-size: 16px;
+    }
+
+    .email-card small {
+      color: #aaa;
+    }
+
+    .email-body {
+      margin-top: 8px;
+      font-size: 14px;
+      color: #ddd;
+      white-space: pre-line;
+    }
+
+    .scrollable {
+      overflow-y: auto;
+      max-height: 85vh;
+    }
+
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background-color: #555;
+      border-radius: 10px;
+    }
+
+    #searchResults {
+      position: absolute;
+      top: 100%;          
+      left: 0;
+      width: 100%;
+      background-color: black;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+      z-index: 9999;      
+      max-height: 250px;
+      overflow-y: auto;
+    }
+
+    .dropdown-item {
+      padding: 4px;
+    }
+
+    .dropdown-item:hover {
+      cursor: pointer;
+      background-color: #555;
+      opacity: 0.75;
+    }
+
+    .navBar-subItem {
+      margin-left: 32px;
+    }
+
+    .navBar-subItem:hover {
+      cursor: pointer;
+      opacity: 0.75;
+    }
+
+    .d-flex.flex-row.flex-grow-1 {
+      flex: 1;
+      min-height: 0; 
+    }
+
+
+  </style>
+</head>
+<body>
+  <div class = "root d-flex flex-column">
+  <div class = "nav-bar bg-primary p-4 d-flex align-items-center justify-content-between" style="height: 6rem">
+    <a href="index.html" class="fs-2 fw-bold text-uppercase text-decoration-none text-light">
+      Analysia
+    </a>    
+    <div class = "d-flex justify-content-between">
+      <a href="node_detail.html" class = "navBar-subItem fw-bold text-uppercase text-decoration-none text-light">Actor details</a>
+      <a href="threads.html" class = "navBar-subItem fw-bold text-uppercase text-decoration-none text-light">Threads</a>
+    </div>
+  </div>
+  <div class = "main-container position-relative d-flex flex-column flex-grow-1">
+    <div class="search-box position-relative">
+      <input class = "w-100 p-4 " type="text" id="nodeSearch" placeholder="Search for a node (e.g. @enron.com)">
+      <div id="searchResults" class="dropdown"></div>
+    </div>
+    <div class = "d-flex flex-row flex-grow-1">
+      <div id="node-info">
+        <h2>Loading node info...</h2>
+      </div>
+
+      <div id="email-list" class = "flex-grow-1">
+        <h3>Loading emails...</h3>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+</body>
+</html>

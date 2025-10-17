@@ -16,7 +16,7 @@ from pathlib import Path
 from urllib.parse import unquote
 
 IN_PATH  = Path("Emails.parquet")
-OUT_PATH = Path("Emails_clean.parquet")
+OUT_PATH = Path("new_data/Emails_clean_new.parquet")
 
 ENRON_DOMAIN = "enron.com"
 MASS_MAIL_THRESHOLD = 15
@@ -78,58 +78,69 @@ def main():
 
     # Keep only B-schema columns
     keep = [
-        "email_id","person_id","from_norm","to_norm","cc_norm","bcc_norm",
+        "email_id", "msg_id", "x_from", "x_to","person_id","from_norm","to_norm","cc_norm","bcc_norm",
         "recipient_count","dt_utc","subject","body_raw",
         "internal_sender","mass_mail","domain_sender",
         "employee_dir","folder","path"
     ]
-    out = df[keep].copy()
-    out["dt_utc"] = pd.to_datetime(out["dt_utc"], utc=True)
 
-    out.to_parquet(OUT_PATH, index=False)
-    print(f"Wrote {len(out):,} rows to {OUT_PATH}")
+    # keep = [
+    #     "email_id", "person_id","from_norm","to_norm","cc_norm","bcc_norm",
+    #     "recipient_count","dt_utc","subject","body_raw",
+    #     "internal_sender","mass_mail","domain_sender",
+    #     "employee_dir","folder","path"
+    # ]
+    df = df[keep]
+    df["dt_utc"] = pd.to_datetime(df["dt_utc"], utc=True)
+
+
+    email_re = re.compile(r'^[\w\.\+\-/%]+@[\w\.\-]+\.\w+$')
+
+    weird_from = df.loc[~df["from_norm"].fillna("").str.match(email_re), "from_norm"]
+
+    print("Weird from_raw count:", len(weird_from))
+    print("Examples:\n", weird_from.sample(3, random_state=1))
+
+    print("\n")
+
+    print("Normalized recipients first 5 items to list:")
+    print(df["to_norm"].head(5).tolist())
+    print(type(df["to_norm"].iloc[0]))
+
+    print("\n")
+
+    empty_recips = df[df["recipient_count"] == 0]
+    print("Emails with 0 recipients:", len(empty_recips))
+
+    print("\n")
+
+    print("Null dates:", df["dt_utc"].isna().sum())
+    print("\n")
+
+    print(df["recipient_count"].describe())
+    print("Mass mails:", df["mass_mail"].sum())
+    print("\n")
+
+    print("Emails with empty body:", (df["body_raw"].str.strip() == "").sum())
+
+
+    df = df[df["recipient_count"] > 0]
+
+
+    print("Normalized recipients first 5 items to list:")
+    print(df["to_norm"].head(5).tolist())
+    print(type(df["to_norm"].iloc[0]))
+
+
+    valid_df = df.loc[df["from_norm"].fillna("").str.match(email_re)].copy()
+    print(valid_df.info())
+
+    valid_df.to_parquet(OUT_PATH, index=False)
+    print(f"Wrote {len(valid_df):,} rows to {OUT_PATH}")
+
 
 if __name__ == "__main__":
     main()
 
-"""## Recheck data post-cleaning"""
 
-import re, hashlib, pandas as pd
-from pathlib import Path
-from urllib.parse import unquote
-
-
-IN_PATH  = Path("Emails_clean.parquet")      # from A
-OUT_PATH = Path("Emails_clean.parquet")
-
-#OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-df = pd.read_parquet(IN_PATH)
-email_re = re.compile(r'^[\w\.\+\-/%]+@[\w\.\-]+\.\w+$')
-
-weird_from = df.loc[~df["from_norm"].fillna("").str.match(email_re), "from_norm"]
-
-print("Weird from_raw count:", len(weird_from))
-print("Examples:\n", weird_from.sample(3, random_state=1))
-
-print("\n")
-
-print("Normalized recipients first 5 items to list:")
-print(df["to_norm"].head(5).tolist())
-print(type(df["to_norm"].iloc[0]))
-
-print("\n")
-
-empty_recips = df[df["recipient_count"] == 0]
-print("Emails with 0 recipients:", len(empty_recips))
-
-print("\n")
-
-print("Null dates:", df["dt_utc"].isna().sum())
-print("\n")
-
-print(df["recipient_count"].describe())
-print("Mass mails:", df["mass_mail"].sum())
-print("\n")
-
-print("Emails with empty body:", (df["body_raw"].str.strip() == "").sum())
 

@@ -48,7 +48,7 @@ print("Categories:", categories)
 # -------------------- Load model --------------------
 print("\nLoading zero-shot classification model (facebook/bart-large-mnli)...")
 classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli", device=-1)  # runs on CPU
-print("🚀 Model loaded — starting inference...\n")
+print("Model loaded — starting inference...\n")
 
 # -------------------- Run classification --------------------
 rows = []
@@ -76,7 +76,7 @@ for i, (_, row) in enumerate(tqdm(df.iterrows(), total=total, desc="Processing e
     # Quick progress checkpoints (5%, 50%, 100%)
     pct = int(((i + 1) / total) * 100)
     if pct in [5, 50, 100]:
-        print(f"✅ {pct}% done ({i+1}/{total})")
+        print(f"{pct}% done ({i+1}/{total})")
         pd.DataFrame(rows).to_parquet(OUT_PARQ, index=False)
         pd.DataFrame(rows).to_csv(OUT_CSV, index=False)
 
@@ -84,5 +84,5 @@ for i, (_, row) in enumerate(tqdm(df.iterrows(), total=total, desc="Processing e
 pd.DataFrame(rows).to_parquet(OUT_PARQ, index=False)
 pd.DataFrame(rows).to_csv(OUT_CSV, index=False)
 
-print(f"\n✅ Done. Processed {len(rows)} flagged emails in {round(time.time() - start, 2)} seconds.")
+print(f"\nProcessed {len(rows)} flagged emails in {round(time.time() - start, 2)} seconds.")
 print(f"Outputs saved to:\n  {OUT_PARQ}\n  {OUT_CSV}")

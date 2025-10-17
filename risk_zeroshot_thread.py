@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """
 Zero-Shot Risk Classification (Threads Only - Flagged)
-Uses facebook/bart-large-mnli on threads flagged by the hybrid model.
+Runs facebook/bart-large-mnli on threads already flagged by the hybrid model.
 Inputs:
     ThreadText.parquet
     RiskTaxonomy.json
-    risk_outputs/RiskScores_threads.parquet   (for flagged threads)
+    risk_outputs/RiskScores_threads.parquet   (flagged threads only)
 Outputs:
     risk_outputs/RiskScores_zeroshot_threads.parquet
     risk_outputs/RiskScores_zeroshot_threads.csv
@@ -27,17 +27,17 @@ OUT_CSV  = BASE_DIR / "risk_outputs" / "RiskScores_zeroshot_threads.csv"
 OUT_PARQ.parent.mkdir(parents=True, exist_ok=True)
 
 # -------------------- Load data --------------------
-print("\nLoading thread and flagged hybrid data...")
+print("\nLoading thread data and flagged hybrid results...")
 
 threads_df = pd.read_parquet(THREAD_PATH)
 hybrid_df = pd.read_parquet(HYBRID_PATH)
 
-# keep only threads with hits_total > 0
+# Keep only threads that had hits_total > 0
 flagged_ids = set(hybrid_df.loc[hybrid_df["hits_total"] > 0, "thread_id"])
 df = threads_df[threads_df["thread_id"].isin(flagged_ids)].copy()
 print(f"Loaded {len(df)} flagged threads for zero-shot classification.")
 
-# ✅ combine subject and body into one text column
+# Combine subject and body text for inference
 subj = df["subject_norm"] if "subject_norm" in df.columns else ""
 body = df["body_concat"] if "body_concat" in df.columns else ""
 df["__text__"] = (subj.fillna("") + " " + body.fillna("")).str.strip()
@@ -46,6 +46,7 @@ df["__text__"] = (subj.fillna("") + " " + body.fillna("")).str.strip()
 with open(TAX_PATH, "r", encoding="utf-8") as f:
     tax = json.load(f)
 
+# Handles both nested and simple JSON formats
 categories = []
 for c in tax.get("categories", []):
     if isinstance(c, dict) and "name" in c:
@@ -86,7 +87,7 @@ for i, (_, row) in enumerate(tqdm(df.iterrows(), total=total, desc="Processing t
         "model_confidence": score
     })
 
-    # Save progress every 100 threads
+    # Save progress periodically
     if (i + 1) % 100 == 0:
         pd.DataFrame(rows).to_parquet(OUT_PARQ, index=False)
         pd.DataFrame(rows).to_csv(OUT_CSV, index=False)
@@ -94,7 +95,7 @@ for i, (_, row) in enumerate(tqdm(df.iterrows(), total=total, desc="Processing t
         if int(percent) % 10 == 0:
             print(f"✅ {int(percent)}% done ({i+1}/{total})")
 
-# Final save
+# -------------------- Final save --------------------
 pd.DataFrame(rows).to_parquet(OUT_PARQ, index=False)
 pd.DataFrame(rows).to_csv(OUT_CSV, index=False)
 

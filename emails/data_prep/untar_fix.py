@@ -1,8 +1,8 @@
 # untar_fix_windows.py
 import tarfile, os, shutil, re
 
-SRC = "enron_mail_20150507.tar.gz"
-DST = "maildir_fixed"  # new, cleaned output
+SRC = "C:/Users/Hai/OneDrive - Swinburne University/enron_mail_20150507.tar.gz"
+DST = "C:/Users/Hai/Downloads/maildir_fixed"  # new, cleaned output
 
 def sanitize(path: str) -> str:
     # normalize slashes and remove leading "./"

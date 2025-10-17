@@ -4,11 +4,12 @@ import pandas as pd
 import nltk
 from nltk.tokenize import sent_tokenize
 
-INPUT_CLEAN = Path("Emails_clean.parquet")    # already cleaned emails
-OUT_DIR = Path("threads_out")
+INPUT_CLEAN = Path("data/Emails_clean_9902.parquet")    # already cleaned emails
+OUT_DIR = Path("data/threads")
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 nltk.download("punkt", quiet=True)
+nltk.download("punkt_tab", quiet=True)
 
 def normalize_subject(subj: str) -> str:
     if pd.isna(subj): return ""
@@ -29,9 +30,19 @@ def clean_body(text: str) -> str:
     t = re.sub(r"[ \t]+", " ", t)
     return t.strip()
 
-# ------------ load cleaned emails ------------
+# Load cleaned emails
 df = pd.read_parquet(INPUT_CLEAN)
 print("Loaded:", df.shape)
+
+print(f"Original length: {len(df):,} emails")
+
+if "internal_sender" in df.columns:
+    df = df[df["internal_sender"] == True].copy()
+else:
+    df = df[df["person_id"].str.endswith("@enron.com", na=False)].copy()
+
+print(f"Filtered to internal senders only: {len(df):,} emails")
+
 
 # subject normalization at email-level (helps thread grouping)
 df["subject_root"] = df["subject"].map(normalize_subject)
@@ -49,7 +60,7 @@ df["thread_id"] = df.apply(
     axis=1
 )
 
-# ------------ build Threads.parquet ------------
+# Threads.parquet
 threads = df.groupby("thread_id").agg(
     n_emails=("email_id", "count"),
     participants=("participants", lambda x: sorted(set(p for sub in x for p in sub))),
@@ -60,10 +71,10 @@ threads = df.groupby("thread_id").agg(
     email_ids=("email_id", lambda x: list(x))
 ).reset_index()
 
-threads.to_parquet(OUT_DIR / "Threads.parquet", index=False)
-print("Threads.parquet:", threads.shape)
+threads.to_parquet(OUT_DIR / "Threads_internal_9902.parquet", index=False)
+print("Threads_9902.parquet:", threads.shape)
 
-# ------------ build ThreadText.parquet ------------
+# build ThreadText.parquet
 thread_text = df.groupby("thread_id").agg(
     subject_norm=("subject_root", "first"),
     body_concat=("body_raw", lambda x: "\n\n".join(clean_body(b) for b in x if b.strip())),
@@ -72,10 +83,10 @@ thread_text = df.groupby("thread_id").agg(
 thread_text["n_tokens"] = thread_text["body_concat"].map(lambda t: len(t.split()))
 thread_text["has_text"] = thread_text["n_tokens"] > 0
 
-thread_text.to_parquet(OUT_DIR / "ThreadText.parquet", index=False)
+thread_text.to_parquet(OUT_DIR / "ThreadText_internal_9902.parquet", index=False)
 print("ThreadText.parquet:", thread_text.shape)
 
-# ------------ build ThreadSentence.parquet ------------
+# ThreadSentence.parquet
 sent_rows = []
 for _, row in thread_text[thread_text["has_text"]].iterrows():
     for i, s in enumerate(sent_tokenize(row["body_concat"])):
@@ -88,10 +99,9 @@ for _, row in thread_text[thread_text["has_text"]].iterrows():
                 "sentence_text": s
             })
 sent_df = pd.DataFrame(sent_rows)
-sent_df.to_parquet(OUT_DIR / "ThreadSentence.parquet", index=False)
-print("ThreadSentence.parquet:", sent_df.shape)
+sent_df.to_parquet(OUT_DIR / "ThreadSentence_internal_9902.parquet", index=False)
+print("ThreadSentence_9902.parquet:", sent_df.shape)
 
-# ------------ QA ------------
 print("\nQA:")
 print("  Total threads:", len(threads))
 print("  With text    :", thread_text['has_text'].sum())

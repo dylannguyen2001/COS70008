@@ -7,13 +7,12 @@ import nltk
 from nltk.tokenize import sent_tokenize
 
 # Use your OneDrive maildir folder path
-MAILDIR = r"C:\Users\petermak11\OneDrive - Swinburne University\Documents\Master of IT\2025 Semester 2\COS70008 - Technology Innovation Research and Project\enron_mail_20150507.tar\enron_mail_20150507\maildir"
+# MAILDIR = r"C:\Users\petermak11\OneDrive - Swinburne University\Documents\Master of IT\2025 Semester 2\COS70008 - Technology Innovation Research and Project\enron_mail_20150507.tar\enron_mail_20150507\maildir"
 
 # Path to Emails_clean.parquet  (⚠️ double-check the exact filename in Explorer!)
-INPUT_CLEAN = os.path.join(MAILDIR, "Emails_clean.parquet")
+INPUT_CLEAN = Path("data/Emails_clean_9902.parquet")
+OUT_DIR = Path("data/nlp_inputs")
 
-# Output folder (inside maildir\outputs)
-OUT_DIR = os.path.join(MAILDIR, "outputs")
 Path(OUT_DIR).mkdir(parents=True, exist_ok=True)
 
 # Sanity check
@@ -83,9 +82,9 @@ docindex["reply_flag"]   = df["subject"].str.lower().str.startswith("re:")
 docindex["forward_flag"] = df["subject"].str.lower().str.startswith("fwd:")
 
 # ------------ save ------------
-textbase.to_parquet(os.path.join(OUT_DIR, "TextBase.parquet"), index=False)
-sent_df.to_parquet(os.path.join(OUT_DIR, "Sentence.parquet"), index=False)
-docindex.to_parquet(os.path.join(OUT_DIR, "DocIndex.parquet"), index=False)
+textbase.to_parquet(os.path.join(OUT_DIR, "TextBase_9902.parquet"), index=False)
+sent_df.to_parquet(os.path.join(OUT_DIR, "Sentence_9902.parquet"), index=False)
+docindex.to_parquet(os.path.join(OUT_DIR, "DocIndex_9902.parquet"), index=False)
 
 print("Saved output files to:", OUT_DIR)
 

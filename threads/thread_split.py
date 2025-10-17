@@ -1,14 +1,17 @@
 import pandas as pd
 from pathlib import Path
 
-# ==== Paths ====
-THREADS_PATH   = Path("threads_out/Threads.parquet")
-TEXT_PATH      = Path("threads_out/ThreadText.parquet")
-SENT_PATH      = Path("threads_out/ThreadSentence.parquet")
+# P aths
+OUT_DIR = Path("data/threads")
+OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-OUT_THREADS    = Path("threads_out/Threads_multi.parquet")
-OUT_TEXT       = Path("threads_out/ThreadText_multi.parquet")
-OUT_SENT       = Path("threads_out/ThreadSentence_multi.parquet")
+THREADS_PATH   = OUT_DIR / ("Threads_internal_9902.parquet")
+TEXT_PATH      = OUT_DIR / ("ThreadText_internal_9902.parquet")
+SENT_PATH      = OUT_DIR / ("ThreadSentence_internal_9902.parquet")
+
+OUT_THREADS    = OUT_DIR / ("Threads_internal_multi_9902.parquet")
+OUT_TEXT       = OUT_DIR / ("ThreadText_internal_multi_9902.parquet")
+OUT_SENT       = OUT_DIR / ("ThreadSentence_internal_multi_9902.parquet")
 
 def main():
     # Load threads
@@ -38,14 +41,12 @@ def main():
     multi_threads = df_threads[df_threads["has_replies"]].copy()
     multi_ids = set(multi_threads["thread_id"])
 
-    # --- Filter text + sentence files by thread_id ---
     df_text = pd.read_parquet(TEXT_PATH)
     df_sent = pd.read_parquet(SENT_PATH)
 
     df_text_multi = df_text[df_text["thread_id"].isin(multi_ids)].copy()
     df_sent_multi = df_sent[df_sent["thread_id"].isin(multi_ids)].copy()
 
-    # --- Save ---
     multi_threads.to_parquet(OUT_THREADS, index=False)
     df_text_multi.to_parquet(OUT_TEXT, index=False)
     df_sent_multi.to_parquet(OUT_SENT, index=False)

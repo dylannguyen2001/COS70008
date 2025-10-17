@@ -4,378 +4,100 @@
 <meta charset="UTF-8">
 <title>Enron Risk–Sentiment SNA</title>
 <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+<link rel="stylesheet" href="styles.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
 <style>
-  body { margin: 0; background: #0b0b0b; color: #eee; font-family: "Segoe UI", sans-serif; overflow: hidden; }
-  svg { width: 100vw; height: 100vh; }
-  .node { cursor: pointer; transition: stroke-width 0.2s ease; }
-  .node:hover { stroke-width: 3.5px; filter: drop-shadow(0 0 6px rgba(255,255,255,0.4)); }
-  .link { stroke-opacity: 0.7; transition: stroke-width 0.2s ease, stroke 0.2s ease; cursor: pointer; }
-  .link:hover { stroke-width: 3px; stroke-opacity: 1.0; }
-  .tooltip {
-    position: absolute;
-    background: rgba(0,0,0,0.9);
-    color: white;
-    padding: 8px 12px;
-    border-radius: 6px;
-    font-size: 13px;
-    pointer-events: none;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.5);
-  }
-  #controls {
-    position: absolute;
-    top: 10px; left: 10px;
-    background: rgba(0,0,0,0.7);
-    padding: 10px 14px;
-    border-radius: 6px;
-    font-size: 13px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    align-items: center;
-  }
 
   #statsBox {
-  position: absolute;
-  top: 70px; left: 10px;
-  background: rgba(20,20,20,0.8);
-  padding: 10px 14px;
-  border-radius: 6px;
-  font-size: 13px;
-  line-height: 1.4em;
-  color: #ddd;
-  max-width: 240px;
-}
+    position: absolute;
+    top: 0px; right: 0px;
+    margin: 10px;
+    background: rgba(20,20,20,0.8);
+    padding: 1rem;
+    border-radius: 6px;
+    font-size: 16px;
+    color: #ddd;
+    max-width: 240px;
+  }
 
-  #controls input, #controls select { margin-left: 4px; }
+  #controls {
+    position: absolute;
+    top: 0px; right: left;
+    margin: 10px;
+    background: rgba(20,20,20,0.8);
+    padding: 1rem;
+    border-radius: 6px;
+    color: #ddd;
+    max-width: 240px;
+  }
+
+  .filter-component {
+    margin-top: 16px;
+  }
+
+  .navBar-subItem {
+    margin-left: 32px;
+  }
+
+  .navBar-subItem:hover {
+    cursor: pointer;
+    opacity: 0.75;
+  }
 </style>
 </head>
-<body>
+<body class = "bg-dark m-0 overflow-hidden text-light">
 
-<!-- === Filter Controls === -->
-<div id="controls">
-  <label>Nodes:
-    <input type="range" id="nodeLimit" min="20" max="500" value="50">
-    <span id="nodeLimitValue">50</span>
-  </label>
-  <label>Community:
-    <select id="communityFilter">
-      <option value="all">All</option>
-      <option value="Trading">Trading</option>
-      <option value="Legal">Legal</option>
-      <option value="Finance">Finance</option>
-      <option value="Executive">Executive</option>
-      <option value="PR">PR</option>
-    </select>
-  </label>
-  <label>Risk ≥ 
-    <input type="range" id="riskFilter" min="0" max="1" step="0.1" value="0">
-    <span id="riskValue">0</span>
-  </label>
+<div class = "root d-flex flex-column">
+  <div class = "nav-bar bg-primary p-4 d-flex align-items-center justify-content-between" style="height: 6rem">
+    <a href="index.html" class="fs-2 fw-bold text-uppercase text-decoration-none text-light">
+      Analysia
+    </a>    
+    <div class = "d-flex justify-content-between">
+      <a href="node_detail.html" class = "navBar-subItem fw-bold text-uppercase text-decoration-none text-light">Actor details</a>
+      <a href="threads.html" class = "navBar-subItem fw-bold text-uppercase text-decoration-none text-light">Threads</a>
+    </div>
+  </div>
+  <div class = "main-container position-relative">
+    <div id="controls" class = "p-4 d-flex flex-column">
+      <label class = "filter-component form-label fs-6 fw-bold">Nodes:
+        <input class="form-range" type="range" id="nodeLimit" min="20" max="500" value="100">
+        <span id="nodeLimitValue">100</span>
+      </label>
+      <label class = "filter-component form-label fs-6 fw-bold">Community:
+        <select class="form-select form-select-sm" style="margin-top: 4px;" id="communityFilter">
+          <option value="all">All</option>
+        </select>
+      </label>
+      <label class = "filter-component form-label fs-6 fw-bold">Risk ≥ 
+        <input class="form-range" type="range" id="riskFilter" min="0" max="1" step="0.1" value="0">
+        <span id="riskValue">0</span>
+      </label>
+      <label class = "filter-component form-label fs-6 fw-bold">Sentiment ≥ 
+        <input class="form-range" type="range" id="sentimentFilter" min="0" max="1" step="0.1" value="0">
+        <span id="riskValue">0</span>
+      </label>
+      <label class = "filter-component form-label fs-6 fw-bold" for="yearSelect">Time Filter:
+        <select id="yearSelect" style="margin-left:6px; padding:3px 6px;">
+          <option value="all" selected>All Years</option>
+          <option value="1999">1999</option>
+          <option value="2000">2000</option>
+          <option value="2001">2001</option>
+          <option value="2002">2002</option>
+        </select>
+      </label>
+
+    </div>
+    <div id="statsBox">Loading metrics...</div>
+    <svg id="svg" class = "vw-100 vh-100"></svg>
+    <div class="tooltip" style="opacity:0"></div>
+  </div>
 </div>
-<div id="statsBox">Loading metrics...</div>
-
-<svg></svg>
-<div class="tooltip" style="opacity:0"></div>
-
-<script>
-d3.json("graph_mock.json").then(data => {
-
-  const width = window.innerWidth;
-  const height = window.innerHeight;
-
-  const svg = d3.select("svg");
-  const container = svg.append("g");
-  const tooltip = d3.select(".tooltip");
-
-  // === Zoom & Pan ===
-  svg.call(d3.zoom()
-    .scaleExtent([0.1, 6])
-    .on("zoom", (event) => container.attr("transform", event.transform))
-  );
-
-  // Keep full data for filtering
-  const allNodes = data.nodes;
-  const allEdges = data.edges;
-
-  // === Scales ===
-  const riskColor = d3.scaleSequential(d3.interpolateRdYlGn).domain([1, 0]);
-  const sentimentColor = d3.scaleSequential(d3.interpolatePuOr).domain([-1, 1]);
-  const commColors = d3.scaleOrdinal(d3.schemeTableau10);
-  const riskCategoryColor = d3.scaleOrdinal()
-    .domain(["Compliance", "Operational", "Financial", "Reputation", "Legal", "Strategic"])
-    .range(["#ff4d4d", "#ff9933", "#ffd633", "#66cc66", "#3399ff", "#cc66ff"]);
-  const sizeScale = d3.scaleSqrt()
-                      .domain([1, d3.max(allNodes, d => d.degree || 1)])
-                      .range([6, 18]);
-
-  // === Initialize nodes
-  let nodes = allNodes.slice(0, 50);
-  let nodeIds = new Set(nodes.map(d => d.id));
-  let edges = allEdges.filter(e => nodeIds.has(e.source) && nodeIds.has(e.target));
-
-  nodes.forEach(d => {
-    d.x = width / 2 + (Math.random() - 0.5) * 300;
-    d.y = height / 2 + (Math.random() - 0.5) * 300;
-  });
-
-  const simulation = d3.forceSimulation(nodes)
-      .force("link", d3.forceLink(edges).id(d => d.id).distance(100))
-      .force("charge", d3.forceManyBody().strength(-200))
-      .force("center", d3.forceCenter(width / 2, height / 2))
-      .force("collision", d3.forceCollide().radius(d => sizeScale(d.degree) + 10))
-      .on("tick", ticked);
-
-  let link = container.selectAll(".link")
-      .data(edges)
-      .enter().append("line")
-      .attr("class", "link")
-      .attr("stroke", d => sentimentColor(d.sentiment_score || 0))
-      .attr("stroke-width", d => 1 + (d.weight || 1));
-
-  let node = container.selectAll(".node")
-      .data(nodes)
-      .enter().append("circle")
-      .attr("class", "node")
-      .attr("r", d => sizeScale(d.degree))
-      .attr("fill", d => commColors(d.community))
-      .attr("stroke", d => riskCategoryColor(d.risk_category || "Operational"))
-      .attr("stroke-width", 3)
-      .attr("opacity", 0.95)
-      .call(drag(simulation));
-
-  // === Tooltips
-  node.on("mouseover", (event, d) => {
-      tooltip.transition().style("opacity", 1);
-      tooltip.html(`
-        <b>${d.id}</b><br>
-        <b>Community:</b> ${d.community}<br>
-        <b>Risk Type:</b> ${d.risk_category || "N/A"}<br>
-        <b>Risk Score:</b> ${(d.avg_risk ?? 0).toFixed(2)}<br>
-        <b>Sentiment:</b> ${(d.avg_sentiment ?? 0).toFixed(2)}
-      `)
-      .style("left", (event.pageX + 10) + "px")
-      .style("top", (event.pageY - 20) + "px");
-  }).on("mouseout", () => tooltip.transition().style("opacity", 0));
-
-  link.on("mouseover", (event, d) => {
-      tooltip.transition().style("opacity", 1);
-      tooltip.html(`
-        <b>Edge:</b> ${d.source.id} → ${d.target.id}<br>
-        <b>Sentiment:</b> ${(d.sentiment_score ?? 0).toFixed(2)}<br>
-        <b>Risk:</b> ${(d.risk_score ?? 0).toFixed(2)}
-      `)
-      .style("left", (event.pageX + 10) + "px")
-      .style("top", (event.pageY - 20) + "px");
-  }).on("mouseout", () => tooltip.transition().style("opacity", 0));
-
-  function ticked() {
-    link.attr("x1", d => d.source.x)
-        .attr("y1", d => d.source.y)
-        .attr("x2", d => d.target.x)
-        .attr("y2", d => d.target.y);
-    node.attr("cx", d => d.x).attr("cy", d => d.y);
-  }
-
-  // === Drag behavior with locking
-  function drag(sim) {
-    function dragstarted(event, d) {
-      if (!event.active) sim.alphaTarget(0.3).restart();
-      d.fx = d.x; d.fy = d.y;
-    }
-    function dragged(event, d) { d.fx = event.x; d.fy = event.y; }
-    function dragended(event, d) {
-      if (event.sourceEvent.shiftKey) { d.fx = null; d.fy = null; }
-      if (!event.active) sim.alphaTarget(0);
-    }
-    return d3.drag().on("start", dragstarted).on("drag", dragged).on("end", dragended);
-  }
-
-  // === Filter Controls ===
-  d3.select("#nodeLimit").on("input", function() {
-    d3.select("#nodeLimitValue").text(this.value);
-    applyFilters();
-  });
-
-  d3.select("#communityFilter").on("change", applyFilters);
-  d3.select("#riskFilter").on("input", function() {
-    d3.select("#riskValue").text(this.value);
-    applyFilters();
-  });
-
-  function applyFilters() {
-    const limit = +document.getElementById("nodeLimit").value;
-    const comm = document.getElementById("communityFilter").value;
-    const minRisk = +document.getElementById("riskFilter").value;
-
-    nodes = allNodes
-      .filter(d =>
-        (comm === "all" || d.community === comm) 
-        (d.avg_risk >= minRisk)
-      )
-      .slice(0, limit);
-
-    nodeIds = new Set(nodes.map(d => d.id));
-    edges = allEdges.filter(e => nodeIds.has(e.source) && nodeIds.has(e.target));
-
-    updateGraph();
-  }
-  updateCommunityStats();
-
-function applyFilters() {
-  const limit = +document.getElementById("nodeLimit").value;
-  const comm = document.getElementById("communityFilter").value;
-  const minRisk = +document.getElementById("riskFilter").value;
-
-  const newNodes = allNodes
-    .filter(d =>
-      (comm === "all" || d.community === comm) &&
-      (d.avg_risk >= minRisk)
-    )
-    .slice(0, limit);
-
-  const nodeIds = new Set(newNodes.map(d => d.id));
-  const newEdges = allEdges.filter(
-    e => nodeIds.has(e.source.id || e.source) && nodeIds.has(e.target.id || e.target)
-  );
-
-  // Preserve old positions if possible
-  const prev = new Map(nodes.map(d => [d.id, { x: d.x, y: d.y }]));
-  newNodes.forEach(n => {
-    const p = prev.get(n.id);
-    if (p) { n.x = p.x; n.y = p.y; }
-    else { n.x = width / 2 + (Math.random() - 0.5) * 200; n.y = height / 2 + (Math.random() - 0.5) * 200; }
-  });
-
-  nodes = newNodes;
-  edges = newEdges;
-
-  updateGraph(true);
-}
 
 
-function updateGraph(animated = false) {
-  // === 1️⃣ Re-bind simulation data ===
-  simulation.nodes(nodes);
-  simulation.force("link").links(edges);
-
-  // === 2️⃣ Cleanly remove all stale visuals ===
-  container.selectAll(".link").remove();
-  container.selectAll(".node").remove();
-
-  // === 3️⃣ Re-draw links ===
-  const link = container.selectAll(".link")
-      .data(edges, d => `${d.source.id}-${d.target.id}`)
-      .enter()
-      .append("line")
-      .attr("class", "link")
-      .attr("stroke", d => sentimentColor(d.sentiment_score || 0))
-      .attr("stroke-width", d => 1.5 + (d.weight || 1))
-      .style("opacity", 0.8)
-      .on("mouseover", edgeMouseOver)
-      .on("mouseout", edgeMouseOut);
-
-  // === 4️⃣ Re-draw nodes ===
-  const node = container.selectAll(".node")
-      .data(nodes, d => d.id)
-      .enter()
-      .append("circle")
-      .attr("class", "node")
-      .attr("r", d => sizeScale(d.degree))
-      .attr("fill", d => commColors(d.community))
-      .attr("stroke", d => riskCategoryColor(d.risk_category || "Operational"))
-      .attr("stroke-width", 3)
-      .attr("opacity", 0.95)
-      .on("mouseover", nodeMouseOver)
-      .on("mouseout", nodeMouseOut)
-      .call(drag(simulation));
-
-  // === 5️⃣ Reset tick handler (avoid duplicates) ===
-  simulation.on("tick", () => {
-    link
-      .attr("x1", d => d.source.x)
-      .attr("y1", d => d.source.y)
-      .attr("x2", d => d.target.x)
-      .attr("y2", d => d.target.y);
-
-    node
-      .attr("cx", d => d.x)
-      .attr("cy", d => d.y);
-  });
-
-  // === 6️⃣ Restart simulation smoothly ===
-  simulation.alpha(0.8).restart();
-
-  // === 7️⃣ Update the stats box ===
-  updateCommunityStats();
-}
-
-
-// Tooltip handlers separated for clarity
-function nodeMouseOver(event, d) {
-  tooltip.transition().style("opacity", 1);
-  tooltip.html(`
-    <b>${d.id}</b><br>
-    <b>Community:</b> ${d.community}<br>
-    <b>Risk Type:</b> ${d.risk_category || "N/A"}<br>
-    <b>Risk Score:</b> ${(d.avg_risk ?? 0).toFixed(2)}<br>
-    <b>Sentiment:</b> ${(d.avg_sentiment ?? 0).toFixed(2)}
-  `)
-  .style("left", (event.pageX + 10) + "px")
-  .style("top", (event.pageY - 20) + "px");
-}
-function nodeMouseOut() { tooltip.transition().style("opacity", 0); }
-
-function edgeMouseOver(event, d) {
-  tooltip.transition().style("opacity", 1);
-  tooltip.html(`
-    <b>Edge:</b> ${d.source.id} → ${d.target.id}<br>
-    <b>Sentiment:</b> ${(d.sentiment_score ?? 0).toFixed(2)}<br>
-    <b>Risk:</b> ${(d.risk_score ?? 0).toFixed(2)}
-  `)
-  .style("left", (event.pageX + 10) + "px")
-  .style("top", (event.pageY - 20) + "px");
-}
-function edgeMouseOut() { tooltip.transition().style("opacity", 0); }
-
-
-function updateCommunityStats() {
-  if (!nodes.length) {
-    d3.select("#statsBox").html("No nodes match current filters.");
-    return;
-  }
-
-  const communityGroups = d3.groups(nodes, d => d.community);
-  const comm = document.getElementById("communityFilter").value;
-
-  let text = `<b>Community Metrics</b><br>`;
-
-  if (comm === "all") {
-    // Show global averages
-    const meanRisk = d3.mean(nodes, d => d.avg_risk ?? 0);
-    const meanSent = d3.mean(nodes, d => d.avg_sentiment ?? 0);
-    const meanDeg = d3.mean(nodes, d => d.degree ?? 0);
-    text += `Communities: ${communityGroups.length}<br>
-             Nodes: ${nodes.length}<br>
-             Avg Risk: ${meanRisk.toFixed(2)}<br>
-             Avg Sentiment: ${meanSent.toFixed(2)}<br>
-             Avg Degree: ${meanDeg.toFixed(2)}`;
-  } else {
-    // Show single community metrics
-    const meanRisk = d3.mean(nodes, d => d.avg_risk ?? 0);
-    const meanSent = d3.mean(nodes, d => d.avg_sentiment ?? 0);
-    const meanDeg = d3.mean(nodes, d => d.degree ?? 0);
-    text += `<b>${comm}</b><br>
-             Nodes: ${nodes.length}<br>
-             Avg Risk: ${meanRisk.toFixed(2)}<br>
-             Avg Sentiment: ${meanSent.toFixed(2)}<br>
-             Avg Degree: ${meanDeg.toFixed(2)}`;
-  }
-
-  d3.select("#statsBox").html(text);
-}
-
-
-});
-</script>
+<script type="module" src="d3/main.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
 </body>
 </html>

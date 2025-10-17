@@ -47,7 +47,7 @@ taxonomy = {
 with open(TAXONOMY_JSON, "w", encoding="utf-8") as f:
     json.dump(taxonomy, f, indent=2, ensure_ascii=False)
 
-print(f"✅ Wrote taxonomy: {TAXONOMY_JSON}")
+print(f"Wrote taxonomy: {TAXONOMY_JSON}")
 
 # -------- load TextBase --------
 tb = pd.read_parquet(TEXTBASE)
@@ -112,8 +112,8 @@ seed_out = seed_df[out_cols].copy()
 # -------- save outputs --------
 seed_out.to_csv(SEED_CSV, index=False, encoding="utf-8")
 seed_out.to_parquet(SEED_PARQUET, index=False)
-print(f"✅ Wrote seed table: {SEED_CSV}")
-print(f"✅ Wrote seed parquet: {SEED_PARQUET}")
+print(f"Wrote seed table: {SEED_CSV}")
+print(f"Wrote seed parquet: {SEED_PARQUET}")
 
 print("\nSummary:")
 print(f"  Rows in TextBase with text: {len(tb):,}")

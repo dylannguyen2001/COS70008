@@ -1,0 +1,145 @@
+# -*- coding: utf-8 -*-
+"""
+Week 2 – Part C (Peter): Risk taxonomy + bootstrapped seed set
+
+Inputs:
+  TextBase.parquet  (from Week 1 Part D)
+
+Outputs (created in risk_outputs/):
+  - RiskTaxonomy.json
+  - EmailKeywordHits.parquet
+  - LabeledSeed_review.csv   (you fill risk_label + severity)
+  - LabeledSeed.parquet
+"""
+
+import os, json, re, random
+import pandas as pd
+from pathlib import Path
+
+# ---------- SET BASE FOLDER (useing OneDrive path) ----------
+BASE = r"C:\Users\petermak11\OneDrive - Swinburne University\Documents\Master of IT\2025 Semester 2\COS70008 - Technology Innovation Research and Project\enron_mail_20150507.tar\enron_mail_20150507\maildir"
+TEXTBASE_PATH = os.path.join(BASE, "TextBase.parquet")
+OUT_DIR = os.path.join(BASE, "risk_outputs")
+Path(OUT_DIR).mkdir(parents=True, exist_ok=True)
+
+# ---------- 1) Define taxonomy ----------
+taxonomy = {
+    "categories": ["fraud", "manipulation", "collusion", "reputational"],
+    "severity_levels": ["low", "medium", "high"],
+    "keywords": {
+        "fraud": [
+            r"\bcover\s?up\b", r"\bfalsif(y|ied|ication)\b", r"\bfraud(ulent)?\b",
+            r"\bbackdate(d|)\b", r"\bmisreport(ing|ed|)\b", r"\bbribe(s|d|ry)?\b",
+            r"\binflat(e|ed|ion)\b", r"\bundisclosed\b"
+        ],
+        "manipulation": [
+            r"\bspin\b", r"\bconceal\b", r"\bhide the\b", r"\bremove evidence\b",
+            r"\bmislead(ing|)\b", r"\badjust the numbers\b"
+        ],
+        "collusion": [
+            r"\bcoordina(te|ting)\b", r"\bfix(ed)? price(s|)\b", r"\bnon[- ]compete\b",
+            r"\bagree(d|ment) in secret\b", r"\binsider\b"
+        ],
+        "reputational": [
+            r"\bmedia leak\b", r"\bpress\b", r"\bscandal\b", r"\bembarrass(ment|)\b",
+            r"\bPR\b", r"\bheadline(s|)\b"
+        ]
+    }
+}
+with open(os.path.join(OUT_DIR, "RiskTaxonomy.json"), "w", encoding="utf-8") as f:
+    json.dump(taxonomy, f, indent=2, ensure_ascii=False)
+
+# ---------- 2) Load TextBase ----------
+if not os.path.exists(TEXTBASE_PATH):
+    raise FileNotFoundError(
+        f"Missing TextBase.parquet at:\n{TEXTBASE_PATH}\n"
+        "Make sure Week 1 outputs exist (enron_outputs/TextBase.parquet)."
+    )
+tb = pd.read_parquet(TEXTBASE_PATH).fillna({"subject_norm": "", "body_clean": ""})
+print("Loaded TextBase:", tb.shape)
+
+# ---------- 3) Keyword bootstrapping ----------
+def compile_keyword_patterns(keyword_dict):
+    comp = {}
+    for cat, patterns in keyword_dict.items():
+        comp[cat] = [re.compile(p, flags=re.IGNORECASE) for p in patterns]
+    return comp
+
+def keyword_hits(text, compiled):
+    hits = {cat: 0 for cat in compiled.keys()}
+    terms = {cat: [] for cat in compiled.keys()}
+    for cat, pats in compiled.items():
+        for pat in pats:
+            found = pat.findall(text or "")
+            if found:
+                hits[cat] += len(found)
+                terms[cat].append(pat.pattern)
+    return hits, terms
+
+compiled = compile_keyword_patterns(taxonomy["keywords"])
+
+rows = []
+for _, r in tb.iterrows():
+    text = f"{r['subject_norm']} {r['body_clean']}"
+    h, t = keyword_hits(text, compiled)
+    rows.append({
+        "email_id": r["email_id"],
+        "hits_total": sum(h.values()),
+        **{f"hits_{k}": v for k, v in h.items()},
+        "matched_terms_json": json.dumps(t)
+    })
+hits_df = pd.DataFrame(rows)
+hits_df.to_parquet(os.path.join(OUT_DIR, "EmailKeywordHits.parquet"), index=False)
+
+merged = tb.merge(hits_df, on="email_id", how="left").fillna(
+    {"hits_total": 0, "hits_fraud": 0, "hits_manipulation": 0, "hits_collusion": 0, "hits_reputational": 0}
+)
+print("Merged TextBase + Hits:", merged.shape)
+
+# ---------- 4) Build seed set for manual labelling ----------
+SEED_PER_CAT     = 40     # can tune
+EXTRA_RANDOM_NEG = 60     # can tune
+SNIP_LEN         = 220
+
+parts = []
+for cat in taxonomy["categories"]:
+    cand = merged[merged[f"hits_{cat}"] > 0].sort_values(by=f"hits_{cat}", ascending=False).head(SEED_PER_CAT)
+    parts.append(cand)
+
+neg_pool = merged[merged["hits_total"] == 0]
+if len(neg_pool) > 0:
+    parts.append(neg_pool.sample(n=min(EXTRA_RANDOM_NEG, len(neg_pool)), random_state=42))
+
+seed = pd.concat(parts, ignore_index=True).drop_duplicates(subset=["email_id"])
+
+def snippet(s: str) -> str:
+    s = (s or "").strip()
+    return (s[:SNIP_LEN] + "…") if len(s) > SNIP_LEN else s
+
+seed = seed.assign(
+    snippet=seed["body_clean"].apply(snippet),
+    risk_label="",      # <-- YOU fill (fraud/manipulation/collusion/reputational/none)
+    severity="",        # <-- YOU fill (low/medium/high)
+    notes=""            # <-- optional
+)
+
+cols = [
+    "email_id", "subject_norm", "snippet", "text_len_tokens",
+    "hits_total", "hits_fraud", "hits_manipulation", "hits_collusion", "hits_reputational",
+    "matched_terms_json", "risk_label", "severity", "notes"
+]
+seed_out = seed[cols].copy()
+
+csv_path  = os.path.join(OUT_DIR, "LabeledSeed_review.csv")
+parq_path = os.path.join(OUT_DIR, "LabeledSeed.parquet")
+seed_out.to_csv(csv_path, index=False, encoding="utf-8-sig")
+seed_out.to_parquet(parq_path, index=False)
+
+print("\n✅ Outputs:")
+print("  -", os.path.join(OUT_DIR, "RiskTaxonomy.json"))
+print("  -", os.path.join(OUT_DIR, "EmailKeywordHits.parquet"))
+print("  -", csv_path)
+print("  -", parq_path)
+print("\nNext:")
+print("  • Open LabeledSeed_review.csv and fill risk_label + severity for a few dozen rows.")
+print("  • We’ll use those labels to train/evaluate a first classifier in Week 3.")

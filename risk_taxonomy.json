@@ -1,0 +1,215 @@
+{
+  "categories": [
+    {
+      "name": "fraud",
+      "subcategories": [
+        {
+          "name": "financial deception",
+          "keywords": [
+            "\\bfraud(ulent)?\\b",
+            "\\bbribe(s|ry|d)?\\b",
+            "\\bembezzl(e|ed|ement)\\b",
+            "\\bbackdate(d|)\\b",
+            "\\bmoney laund(er|ering)\\b",
+            "\\bfalse invoice\\b",
+            "\\bghost employee\\b",
+            "\\bkickback(s|)?\\b",
+            "\\bcorrupt(ion|ed)?\\b",
+            "\\bcheat(ing|ed)?\\b"
+          ]
+        },
+        {
+          "name": "data falsification",
+          "keywords": [
+            "\\bfalsif(y|ied|ication)\\b",
+            "\\bmisreport(ing|ed|)\\b",
+            "\\bfabricat(e|ed)?\\b",
+            "\\bduplicate record\\b",
+            "\\bunder[- ]the[- ]table\\b",
+            "\\bundisclosed\\b",
+            "\\bconcealed profit\\b",
+            "\\bfalse claim\\b",
+            "\\bmisappropriat(e|ion)\\b",
+            "\\bforged document\\b"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "manipulation",
+      "subcategories": [
+        {
+          "name": "information distortion",
+          "keywords": [
+            "\\bmanipulat(e|ed|ion)\\b",
+            "\\bspin\\b",
+            "\\bmislead(ing|)?\\b",
+            "\\bconceal\\b",
+            "\\bcover up\\b",
+            "\\bdistort(ed|ion)?\\b",
+            "\\bselective disclosure\\b",
+            "\\bbiased report\\b",
+            "\\bfake news\\b",
+            "\\bsteer narrative\\b"
+          ]
+        },
+        {
+          "name": "data tampering",
+          "keywords": [
+            "\\bremove evidence\\b",
+            "\\bdata tamper(ing|ed)?\\b",
+            "\\bwindow dressing\\b",
+            "\\balter(ed|) record\\b",
+            "\\bdelete message\\b",
+            "\\bfals(e|ify) data\\b",
+            "\\bwithhold information\\b",
+            "\\badjust the numbers\\b",
+            "\\bfudged numbers\\b",
+            "\\baltered evidence\\b"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "collaboration",
+      "subcategories": [
+        {
+          "name": "team conflict",
+          "keywords": [
+            "\\bconflict\\b",
+            "\\bdisagre(e|ment)\\b",
+            "\\bteam tension\\b",
+            "\\bmistrust\\b",
+            "\\binternal conflict\\b",
+            "\\bpoor coordination\\b",
+            "\\brole confusion\\b",
+            "\\bno feedback\\b",
+            "\\bteam friction\\b",
+            "\\bpoor communication\\b"
+          ]
+        },
+        {
+          "name": "workflow breakdown",
+          "keywords": [
+            "\\bworkflow delay\\b",
+            "\\bslow response\\b",
+            "\\bnon[- ]responsive\\b",
+            "\\bno follow[- ]up\\b",
+            "\\bmissed deadline\\b",
+            "\\bduplicate effort\\b",
+            "\\bunderstaffed\\b",
+            "\\boverworked\\b",
+            "\\bproject misalignment\\b",
+            "\\bcommunication breakdown\\b"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "compliance",
+      "subcategories": [
+        {
+          "name": "policy breaches",
+          "keywords": [
+            "\\bbreach(ed|)?\\b",
+            "\\bviolate(d|ion)?\\b",
+            "\\bpolicy failure\\b",
+            "\\bno approval\\b",
+            "\\bunauthori[sz]ed\\b",
+            "\\bnon[- ]compliance\\b",
+            "\\bpolicy exception\\b",
+            "\\bterms breach\\b",
+            "\\bpolicy deviation\\b",
+            "\\brule violation\\b"
+          ]
+        },
+        {
+          "name": "data and security",
+          "keywords": [
+            "\\bdata leak\\b",
+            "\\bsecurity gap\\b",
+            "\\bprivacy issue\\b",
+            "\\bconfidentiality breach\\b",
+            "\\bmissing documentation\\b",
+            "\\bdisclosure failure\\b",
+            "\\bmissing audit\\b",
+            "\\bno approval chain\\b",
+            "\\bunauthori[sz]ed access\\b",
+            "\\bcontract oversight\\b"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "reputational",
+      "subcategories": [
+        {
+          "name": "public perception",
+          "keywords": [
+            "\\bpress\\b",
+            "\\bmedia leak\\b",
+            "\\bheadline(s|)?\\b",
+            "\\bscandal\\b",
+            "\\bPR crisis\\b",
+            "\\bbrand damage\\b",
+            "\\bpublic backlash\\b",
+            "\\bnegative coverage\\b",
+            "\\bviral post\\b",
+            "\\bcomplaint\\b"
+          ]
+        },
+        {
+          "name": "trust and credibility",
+          "keywords": [
+            "\\bcriticism\\b",
+            "\\bwhistleblower\\b",
+            "\\bdefamation\\b",
+            "\\bexposure\\b",
+            "\\btrust loss\\b",
+            "\\breputation risk\\b",
+            "\\bcompany image\\b",
+            "\\bdiscredit\\b",
+            "\\bmedia scandal\\b",
+            "\\bpress inquiry\\b"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "operational",
+      "subcategories": [
+        {
+          "name": "process and system issues",
+          "keywords": [
+            "\\bprocess failure\\b",
+            "\\bworkflow issue\\b",
+            "\\btechnical fault\\b",
+            "\\bdata loss\\b",
+            "\\bsystem outage\\b",
+            "\\bcrash\\b",
+            "\\bslow performance\\b",
+            "\\bconfiguration error\\b",
+            "\\binternal error\\b",
+            "\\bdata breach\\b"
+          ]
+        },
+        {
+          "name": "resource and logistics",
+          "keywords": [
+            "\\bsupply chain\\b",
+            "\\bdelivery delay\\b",
+            "\\bmaintenance\\b",
+            "\\bresource shortage\\b",
+            "\\boperations halted\\b",
+            "\\bperformance drop\\b",
+            "\\bcritical failure\\b",
+            "\\bprocess disruption\\b",
+            "\\baccess issue\\b",
+            "\\bqueue backlog\\b"
+          ]
+        }
+      ]
+    }
+  ],
+  "severity_levels": ["low", "medium", "high"]
+}

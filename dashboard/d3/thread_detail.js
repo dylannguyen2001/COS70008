@@ -32,16 +32,22 @@ Promise.all([
 
     metaBox.innerHTML = `
       <h3>${threadId}</h3>
-      <p><b>Risk Label:</b> ${threadMeta.dominant_emotion}</p>
-      <p><b>Mean Risk:</b> ${threadMeta.mean_risk}</p>
-      <p><b>Mean Sentiment:</b> ${threadMeta.mean_emotion_score}</p>
+      <p><b>Risk Label:</b> ${threadMeta.risk_label_zeroshot}</p>
+      <p><b>Mean Risk:</b> ${threadMeta.mean_risk.toFixed(2)}</p>
+      <p><b>Sentiment Label:</b> ${threadMeta.dominant_sentiment}</p>
+      <p><b>Mean Sentiment:</b> ${threadMeta.mean_sentiment_score.toFixed(2)}</p>
+      <p><b>Emotion Label:</b> ${threadMeta.dominant_emotion}</p>
+      <p><b>Mean Emotion:</b> ${threadMeta.mean_emotion_score.toFixed(2)}</p>
       <p><b>Email Count:</b> ${threadMeta.n_emails}</p>
       <p><b>Participants:</b> ${participants}</p>
     `;
   }
 
   // Find text content
-  const threadText = textData.threads.find(t => t.thread_id === threadId);
+  const textArray = Array.isArray(textData) ? textData : textData.threads;
+  const threadText = textArray.find(t => t.thread_id === threadId);
+
+  //const threadText = textData.threads.find(t => t.thread_id === threadId);
   if (!threadText) {
     textBox.innerHTML = `<p>No text available for this thread.</p>`;
   } else {

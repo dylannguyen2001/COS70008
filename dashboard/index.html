@@ -21,6 +21,9 @@
     font-size: 16px;
     color: #ddd;
     max-width: 240px;
+    max-height: 90vh;
+    overflow-y: auto;
+    scrollbar-width: thin;
   }
 
   #controls {
@@ -71,13 +74,33 @@
           <option value="all">All</option>
         </select>
       </label>
+
+      <label class="filter-component form-label fs-6 fw-bold">
+        Risk Type:
+        <select id="riskTypeFilter" class="form-select form-select-sm">
+          <option value="all">All</option>
+          <option value="nonroutine">Non-Routine Only</option>
+        </select>
+      </label>
       <label class = "filter-component form-label fs-6 fw-bold">Risk ≥ 
         <input class="form-range" type="range" id="riskFilter" min="0" max="1" step="0.1" value="0">
         <span id="riskValue">0</span>
       </label>
+
+      <label class="filter-component form-label fs-6 fw-bold">
+        Sentiment Type:
+        <select id="sentimentTypeFilter" class="form-select form-select-sm">
+          <option value="all">All</option>
+          <option value="nonneutral">Non-Neutral</option>
+          <option value="positive">Positive</option>
+          <option value="neutral">Neutral</option>
+          <option value="negative">Negative</option>
+        </select>
+      </label>
+
       <label class = "filter-component form-label fs-6 fw-bold">Sentiment ≥ 
         <input class="form-range" type="range" id="sentimentFilter" min="0" max="1" step="0.1" value="0">
-        <span id="riskValue">0</span>
+        <span id="sentimentValue">0</span>
       </label>
       <label class = "filter-component form-label fs-6 fw-bold" for="yearSelect">Time Filter:
         <select id="yearSelect" style="margin-left:6px; padding:3px 6px;">

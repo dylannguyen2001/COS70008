@@ -7,15 +7,33 @@ import numpy as np
 
 folders = ["all", "1999", "2000", "2001", "2002"]
 
-def dominant_label(df, label_col, score_col):
-    """Return (dominant_label, intensity) for one person's subset."""
+def dominant_label(df, label_col, score_col, neutral_label=None, top_frac=0.1, min_threshold=0.1):
+    """
+    Return (dominant_label, mean_intensity) based on the top X% highest scores.
+    Keeps results in [0,1]. Filters neutrals unless all entries are neutral.
+    """
     valid = df.dropna(subset=[label_col, score_col])
     if valid.empty:
         return "None", 0.0
-    means = valid.groupby(label_col)[score_col].mean()
-    dom_label = means.idxmax()
-    dom_intensity = means.max()
-    return dom_label, float(dom_intensity)
+
+    # Remove neutral rows unless everything is neutral
+    if neutral_label:
+        non_neutral = valid[valid[label_col] != neutral_label]
+        if not non_neutral.empty:
+            valid = non_neutral
+
+    # sort descending by score
+    valid = valid.sort_values(score_col, ascending=False)
+    top_n = max(1, int(len(valid) * top_frac))
+    top = valid.head(top_n)
+
+    # determine dominant label among top fraction
+    dom_label = top[label_col].value_counts().idxmax()
+    dom_intensity = top[score_col].mean()
+
+    if dom_intensity < min_threshold:
+        return neutral_label or "None", 0.0
+    return str(dom_label), float(dom_intensity)
 
 for folder in folders:
     IN_DIR = Path("data") / folder
@@ -23,8 +41,8 @@ for folder in folders:
     edge_path  = IN_DIR / "Edges_directed_agg_internal.parquet"
     nodes_path = IN_DIR / "NodeMetrics_internal.parquet"
     comms_path = IN_DIR / "Communities_internal.parquet"
-    risks_path = "data/risk_sentiment_results/Email_ZeroShot_RiskScores_internal_multi_9902_both.parquet"
-    sent_path  = "data/risk_sentiment_results/Email_SentimentScores_internal_multi_9902_both.parquet"
+    risks_path = "data/risk_expanded_results/RiskScores_zeroshot_full.parquet"
+    sent_path  = "data/sentiment_results/Email_SentimentScores_internal_multi_9902_both.parquet"
     emails_path= "data/Emails_clean_9902.parquet"
 
     edges  = pd.read_parquet(edge_path)
@@ -50,9 +68,18 @@ for folder in folders:
     # Aggregate per actor (sentiment + risk info)
     agg_rows = []
     for pid, sub in merged.groupby("person_id"):
-        dom_risk, risk_intensity       = dominant_label(sub, "risk_label", "final_score")
-        dom_sent, sentiment_intensity  = dominant_label(sub, "sentiment_label", "sentiment_score")
-        dom_emot, emotion_intensity    = dominant_label(sub, "emotion_label", "emotion_score")
+        dom_risk, risk_intensity = dominant_label(
+            sub, "risk_label", "final_score",
+            neutral_label="This email appears routine, compliant, and shows no indication of risk or wrongdoing.", top_frac = 0.025
+        )
+        dom_sent, sentiment_intensity = dominant_label(
+            sub, "sentiment_label", "sentiment_score",
+            neutral_label="neutral", top_frac=1.0, min_threshold=0.0
+        )
+        dom_emot, emotion_intensity = dominant_label(
+            sub, "emotion_label", "emotion_score",
+            neutral_label="neutral", top_frac=1.0, min_threshold=0.0
+        )
         agg_rows.append({
             "person_id": pid,
             "dom_risk_label": dom_risk,

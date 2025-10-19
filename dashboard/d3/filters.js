@@ -22,6 +22,9 @@ export function applyFilters(allNodes, allEdges, container, simulation, commColo
     updateGraph();
   });
 
+  d3.select("#riskTypeFilter").on("change", updateGraph);
+  d3.select("#sentimentTypeFilter").on("change", updateGraph);
+
   // Build the community dropdown dynamically (top 10 only)
   const commSelect = document.getElementById("communityFilter");
   const commCounts = d3.rollups(
@@ -40,7 +43,9 @@ export function applyFilters(allNodes, allEdges, container, simulation, commColo
     const limit = +document.getElementById("nodeLimit").value;
     const commVal = document.getElementById("communityFilter").value;
     const minRisk = +document.getElementById("riskFilter").value;
+    const riskType = document.getElementById("riskTypeFilter").value;
     const minSentiment = +document.getElementById("sentimentFilter").value;
+    const sentimentType = document.getElementById("sentimentTypeFilter").value;
 
     const visibleEdges = allEdges;
     const activeNodeIds = new Set();
@@ -56,13 +61,27 @@ export function applyFilters(allNodes, allEdges, container, simulation, commColo
       const passesRisk = (d.risk_intensity ?? 0) >= minRisk;
       const passesSent = (d.sentiment_intensity ?? 0) >= minSentiment;
 
-      if (commVal === "all") return passesRisk && passesSent;
+      // Risk type filter
+      const isRoutine = d.risk_label === "This email appears routine, compliant, and shows no indication of risk or wrongdoing.";
+      const passesRiskType = riskType === "all" ? true : !isRoutine;
+
+      // Sentiment type filter
+      const sent = (d.sentiment_label || "").toLowerCase();
+      let passesSentimentType = true;
+      if (sentimentType === "nonneutral") passesSentimentType = sent !== "neutral";
+      else if (sentimentType !== "all") passesSentimentType = sent === sentimentType;
+
+      if (commVal === "all")
+        return passesRisk && passesSent && passesRiskType && passesSentimentType;
       if (commVal === "nonnull")
-        return d.community != null && passesRisk && passesSent;
-      return d.community === +commVal && passesRisk && passesSent;
+        return d.community != null && passesRisk && passesSent && passesRiskType && passesSentimentType;
+      return d.community === +commVal && passesRisk && passesSent && passesRiskType && passesSentimentType;
     });
 
-    activeNodes = activeNodes.slice(0, limit);
+    activeNodes = activeNodes
+      .sort((a, b) => (b.pagerank ?? 0) - (a.pagerank ?? 0))
+      .slice(0, limit);
+
     const nodeIds = new Set(activeNodes.map(d => d.id));
 
     const filteredEdges = visibleEdges.filter(e => {
@@ -86,12 +105,12 @@ export function applyFilters(allNodes, allEdges, container, simulation, commColo
       .attr("stroke", d => {
         const score = d.sentiment_score || 0;
         return d.source.community === d.target.community
-          ? intraColor((score + 1) / 2)   
+          ? intraColor((score + 1) / 2)
           : interColor((score + 1) / 2);
       })
       .attr("stroke-width", d => 0.4 + Math.log1p(d.weight || 1) * 0.5)
       .attr("opacity", d => {
-        const w = Math.min(Math.log1p(d.weight || 1) / 5, 1); 
+        const w = Math.min(Math.log1p(d.weight || 1) / 5, 1);
         return d.source.community === d.target.community
           ? 0.3 + 0.7 * w     // stronger visibility within community
           : 0.05 + 0.4 * w;   // less visible across communities
@@ -101,24 +120,23 @@ export function applyFilters(allNodes, allEdges, container, simulation, commColo
       .on("mouseout", edgeMouseOut);
 
 
-
-    const node = container.selectAll(".node")
-      .data(activeNodes)
-      .enter()
-      .append("circle")
-      .attr("class", "node")
-      .attr("r", d => 10 + 8000 * (d.pagerank))
-      .attr("fill", d => commColors(d.community ?? 0))
-      .attr("fill-opacity", d => 0.4 + 0.6 * (d.sentiment_intensity ?? 0))
-      .attr("stroke", d => riskColor(d.risk_intensity ?? 0))
-      .attr("stroke-width", d => 0.5 + 2.5 * (d.risk_intensity ?? 0))
-      .call(drag(simulation))
-      .on("mouseover", nodeMouseOver)
-      .on("mousemove", nodeMouseMove)
-      .on("mouseout", nodeMouseOut)
-      .on("click", (event, d) => {
-        window.location.href = `node_detail.html?id=${encodeURIComponent(d.id)}`;
-      });
+      const node = container.selectAll(".node")
+        .data(activeNodes)
+        .enter()
+        .append("circle")
+        .attr("class", "node")
+        .attr("r", d => 10 + 4000 * (d.pagerank))
+        .attr("fill", d => commColors(d.community ?? 0))
+        .attr("fill-opacity", d => 0.2 + 0.8 * (d.sentiment_intensity ?? 0))
+        .attr("stroke", d => riskColor(d.risk_intensity ?? 0))
+        .attr("stroke-width", d => 5 * (d.risk_intensity ?? 0))
+        .call(drag(simulation))
+        .on("mouseover", nodeMouseOver)
+        .on("mousemove", nodeMouseMove)
+        .on("mouseout", nodeMouseOut)
+        .on("click", (event, d) => {
+          window.location.href = `node_detail.html?id=${encodeURIComponent(d.id)}`;
+        });
 
     simulation.on("tick", () => {
       link

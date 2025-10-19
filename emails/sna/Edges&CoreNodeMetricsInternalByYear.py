@@ -104,6 +104,34 @@ for year in FOLDERS:
     )
     edges_agg["directed"] = True
 
+
+    # Reciprocal (active two-way actors only) -- Ensuring A <-> B 
+    print(f"Before reciprocity filter: {len(edges_agg):,} directed pairs")
+
+    pairs = set(zip(edges_agg["src_person_id"], edges_agg["dst_person_id"]))
+    rev_pairs = set(zip(edges_agg["dst_person_id"], edges_agg["src_person_id"]))
+    mutual_pairs = pairs & rev_pairs
+
+    edges_agg = edges_agg[edges_agg.apply(
+        lambda r: (r["src_person_id"], r["dst_person_id"]) in mutual_pairs, axis=1
+    )].copy()
+
+    print(f"After reciprocity filter: {len(edges_agg):,} directed pairs (mutual only)")
+
+    active_nodes = set(edges_agg["src_person_id"]) | set(edges_agg["dst_person_id"])
+    edges_agg = edges_agg[
+        edges_agg["src_person_id"].isin(active_nodes)
+        & edges_agg["dst_person_id"].isin(active_nodes)
+    ]
+    print(f"After stricter filter: {len(edges_agg):,} directed pairs (mutual only)")
+    print(f"Filtering raw edges to reciprocal pairs...")
+    edges = edges[
+        edges.apply(lambda r: (r["src_person_id"], r["dst_person_id"]) in mutual_pairs, axis=1)
+    ].copy()
+    print(f"Remaining raw reciprocal edges: {len(edges):,}")
+
+
+
     # Save detailed edge list (each message)
     edges_out = edges[["email_id", "src_person_id", "dst_person_id", "dt_utc", "year"]].copy()
     edges_out["weight"] = edges["weight_unit"].astype("float32")

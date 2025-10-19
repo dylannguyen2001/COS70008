@@ -10,9 +10,9 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 PARQUET_PATH = Path("data/Emails_clean_9902.parquet")
 CSV_PATH = Path("data/Emails_clean_9902.csv")
-BASE = Path("data/risk_sentiment_results")
+BASE = Path("data/sentiment_results")
 SENT_PATH = BASE / "Email_SentimentScores_internal_multi_9902_both.parquet"
-RISK_PATH = BASE / "Email_ZeroShot_RiskScores_internal_multi_9902_both.parquet"
+RISK_PATH = Path("data/risk_expanded_results") / "RiskScores_zeroshot_full.parquet"
 
 
 df = pd.read_parquet(PARQUET_PATH)

@@ -74,14 +74,36 @@ async function renderNode(id) {
 // Fetch emails dynamically from Supabase
 async function loadEmails(personId) {
   try {
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from("emails_clean_9902")
       .select("email_id, from_norm, to_norm, cc_norm, bcc_norm, dt_utc, subject, body_raw, path, risk_label, final_score, sentiment_label, sentiment_score, emotion_label, emotion_score")
       .eq("from_norm", personId)
       .order("dt_utc", { ascending: false })
-      .limit(100);
 
     if (error) throw error;
+    else {
+    data = data
+      .filter(d => (d.body_raw?.split(/\s+/).length ?? 0) > 50) // keep only long bodies
+
+      .sort((a, b) => {
+        const nonRiskLabel = "This email appears routine, compliant, and shows no indication of risk or wrongdoing.";
+
+        const aIsRoutine = a.risk_label === nonRiskLabel;
+        const bIsRoutine = b.risk_label === nonRiskLabel;
+        if (aIsRoutine !== bIsRoutine) return aIsRoutine ? 1 : -1;
+
+
+        const riskDiff = (b.final_score ?? 0) - (a.final_score ?? 0);
+        if (riskDiff !== 0) return riskDiff;
+
+
+        // const dateDiff = new Date(b.dt_utc) - new Date(a.dt_utc);
+        // if (dateDiff !== 0) return dateDiff;
+      });
+
+
+  }
+
 
     if (!data || data.length === 0) {
       emailBox.innerHTML = `<h3>No emails found for this person.</h3>`;
@@ -101,6 +123,7 @@ async function loadEmails(personId) {
       html += `
         <div class="email-card">
           <h4>${e.subject || "(No Subject)"}</h4>
+          <small><b>Email ID:</b> ${e.email_id || "N/A"}</small><br>
           <small><b>Risk label:</b> ${e.risk_label || "N/A"}</small><br>
           <small><b>Risk score:</b> ${e.final_score || "N/A"}</small><br>
           <small><b>Sentiment label:</b> ${e.sentiment_label || "N/A"}</small><br>
@@ -109,6 +132,7 @@ async function loadEmails(personId) {
           <small><b>Emotion score:</b> ${e.emotion_score || "N/A"}</small><br>
           <small><b>Date:</b> ${e.dt_utc || "N/A"}</small><br>
           <small><b>Folder:</b> ${folder}</small><br>
+          <small><b>From:</b> ${formatList(e.from_norm)}</small><br>
           <small><b>To:</b> ${formatList(e.to_norm)}</small><br>
           <small><b>CC:</b> ${formatList(e.cc_norm)}</small><br>
           <small><b>BCC:</b> ${formatList(e.bcc_norm)}</small>

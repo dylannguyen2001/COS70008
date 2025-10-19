@@ -4,13 +4,13 @@
 
 import pandas as pd, json, numpy as np, ast
 
-risk = pd.read_parquet("data/risk_sentiment_results/Thread_ZeroShot_RiskScores_internal_multi_9902_both.parquet")
+risk = pd.read_parquet("data/risk_expanded_results/RiskScores_zeroshot_threads_full.parquet")
 print(f"Loaded {len(risk):,} thread risk rows.")
 
 threads_meta = pd.read_parquet("data/threads/Threads_internal_multi_9902.parquet")
 print(f"Loaded {len(threads_meta):,} thread metadata rows.")
 
-sentiments_score = pd.read_parquet("data/risk_sentiment_results/Thread_SentimentScores_internal_multi_9902_both.parquet")
+sentiments_score = pd.read_parquet("data/sentiment_results/Thread_SentimentScores_internal_multi_9902_both.parquet")
 print(f"Loaded {len(sentiments_score):,} sentiment+emotion rows.")
 
 # Keep only multi-email threads (non-singletons, with replies)

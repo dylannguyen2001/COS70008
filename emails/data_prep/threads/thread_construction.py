@@ -19,16 +19,22 @@ def normalize_subject(subj: str) -> str:
     s = re.sub(r'\s+', ' ', s)
     return s.strip()
 
-def clean_body(text: str) -> str:
-    if pd.isna(text): return ""
-    t = text.replace("\r\n", "\n").replace("\r", "\n")
-    t = "\n".join([ln for ln in t.splitlines() if not ln.strip().startswith(">")])
-    t = re.split(r"(?im)^on .{1,200} wrote:$", t)[0]
-    t = re.sub(r"(?is)\n(--\s*$|best regards|kind regards|regards,|cheers,|thanks,).*$", "", t)
-    t = re.sub(r"(?is)(this e-mail.*confidential|disclaimer:.*)$", "", t)
-    t = re.sub(r"\n{3,}", "\n\n", t)
-    t = re.sub(r"[ \t]+", " ", t)
-    return t.strip()
+def format_email_block(sub):
+    """Format emails within one thread in chronological order with separators."""
+    sub = sub.sort_values("dt_utc")
+    blocks = []
+    for i, row in enumerate(sub.itertuples(index=False)):
+        header = (
+            f"\n--- EMAIL {i+1}/{len(sub)} ---\n"
+            f"From: {row.from_norm}\n"
+            f"Date: {row.dt_utc}\n"
+            f"Subject: {row.subject_root}\n\n"
+        )
+        body = (row.body_raw)
+        if body.strip():
+            blocks.append(header + body)
+    return "\n\n".join(blocks).strip()
+
 
 # Load cleaned emails
 df = pd.read_parquet(INPUT_CLEAN)
@@ -75,10 +81,17 @@ threads.to_parquet(OUT_DIR / "Threads_internal_9902.parquet", index=False)
 print("Threads_9902.parquet:", threads.shape)
 
 # build ThreadText.parquet
-thread_text = df.groupby("thread_id").agg(
-    subject_norm=("subject_root", "first"),
-    body_concat=("body_raw", lambda x: "\n\n".join(clean_body(b) for b in x if b.strip())),
-).reset_index()
+# thread_text = df.groupby("thread_id").agg(
+#     subject_norm=("subject_root", "first"),
+#     body_concat=("body_raw", lambda x: "\n\n".join(clean_body(b) for b in x if b.strip())),
+# ).reset_index()
+
+thread_text = (
+    df.groupby("thread_id")
+      .apply(format_email_block)
+      .reset_index(name="body_concat")
+)
+
 
 thread_text["n_tokens"] = thread_text["body_concat"].map(lambda t: len(t.split()))
 thread_text["has_text"] = thread_text["n_tokens"] > 0

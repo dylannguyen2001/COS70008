@@ -56,13 +56,12 @@ function renderGraph(data, year) {
   ).sort((a, b) => a[0] - b[0]);
 
   communitySelect.innerHTML = `<option value="all">All (${allNodes.length})</option>`;
-  communitySelect.innerHTML += `<option value="nonnull">All Non-null (${counts.reduce((a, [_, c]) => a + c, 0)})</option>`;
   counts.forEach(([id, count]) => {
     communitySelect.innerHTML += `<option value="${id}">Community ${id} (${count})</option>`;
   });
 
   // Coloring based on component
-  const riskColor = d3.scaleSequential(d3.interpolateRdYlGn).domain([1, 0]);
+  const riskColor = d3.scaleSequential(d3.interpolateRdYlGn).domain([0.9, 0]);
   const commExtent = d3.extent(allNodes, d => d.community ?? 0);
   const commColors = d3.scaleSequential(d3.interpolateTurbo).domain(commExtent);
   const sizeScale = d3.scaleSqrt()
@@ -129,11 +128,11 @@ function renderGraph(data, year) {
     .enter()
     .append("circle")
     .attr("class", "node")
-    .attr("r", d => 10 + 8000 * (d.pagerank))
+    .attr("r", d => 10 + 4000 * (d.pagerank))
     .attr("fill", d => commColors(d.community ?? 0))
-    .attr("fill-opacity", d => 0.4 + 0.6 * (d.sentiment_intensity ?? 0))
+    .attr("fill-opacity", d => 0.2 + 0.8 * (d.sentiment_intensity ?? 0))
     .attr("stroke", d => riskColor(d.risk_intensity ?? 0))
-    .attr("stroke-width", d => 0.5 + 2.5 * (d.risk_intensity ?? 0))
+    .attr("stroke-width", d => 5 * (d.risk_intensity ?? 0))
     .call(drag(simulation))
     .on("mouseover", nodeMouseOver)
     .on("mousemove", nodeMouseMove)
